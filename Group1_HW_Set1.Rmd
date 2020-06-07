@@ -1,0 +1,162 @@
+---
+title: "CUNY DT 624---Summer 2020"
+subtitle: "Homework Set 1"
+author: "Group 1: Avraham Adler, Vishal Arora, Gabrielle Bartomeo, Samuel Bellows, Austin Chan"
+date: "Summer 2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Question 1 (Vishal Arora)
+## Questions
+Use the help function to explore what the series gold, woolyrnq and gas
+represent.
+ a. Use `autoplot()` to plot each of these in separate plots.
+ b. What is the frequency of each series? Hint: apply the `frequency()` function.
+ c. Use `which.max()` to spot the outlier in the gold series. Which observation
+ was it?
+ 
+## Answers
+### Part 1
+```{r Q1setup, echo=TRUE, warning=FALSE, out.width="100%", message=FALSE}
+library(fpp2)
+# library(xlsx)
+library(httr)
+```
+Using the help function to know more about the various datasets like a short
+description about the dataset, the format of the dataset---which in this case is
+Time Series data for all three, what is the source of the data, and an example
+of how to display the data to learn about it using the `tsdisplay` function.           
+
+```{r Q1help}
+help(gold)
+help("woolyrnq")
+help("gas")
+```
+
+### Part a
+Using the `autoplot` function can give us a graphic disply of `ts` datasets.
+Looking at the graphs we can see if there is any trend, seasonality, or other
+cyclical patterns in the datasets which can help us in selecting our model for
+prediction.                              
+
+```{r Q1autoplot}
+autoplot(gold)
+autoplot(woolyrnq)
+autoplot(gas)
+```
+
+### Part b
+Using the `frequency` function, we find that Gold has annual frequency, Woolrnq
+has quarterly frequency, and Gas has monthly frequency.
+```{r Q1freuency}
+frequency(gold)
+frequency(woolyrnq)
+frequency(gas)
+```
+
+### Part c
+Using the `which.max()` function gives us the outlier with maximum value as also
+seen from the graph above, which is 770.
+```{r Q1whichmax}
+which.max(gold)
+```
+
+# Question 2.3 (Vishal Arora)
+## Questions
+Download some monthly Australian retail data from the
+[book website](http://otexts.com/fpp2/extrafiles/tute1.csv). These represent
+retail sales in various categories for different Australian states, and are
+stored in a MS-Excel file.
+ 
+ a. You can read the data into R with the following script:
+ ```
+ retaildata <- readxl::read_excel("retail.xlsx", skip=1)
+ ```
+ The second argument (skip=1) is required because the Excel sheet has two header
+ rows.
+
+ b. Select one of the time series as follows (but replace the column name with
+ your own chosen column):
+ ```
+ myts <- ts(retaildata[,"A3349873A"], frequency=12, start=c(1982,4))
+ ```
+ 
+ c. Explore your chosen retail time series using the following functions:
+     ```autoplot(), ggseasonplot(), ggsubseriesplot(), gglagplot(), ggAcf()```
+    Can you spot any seasonality, cyclicity and trend? What do you learn about
+    the series?
+    
+## Answers
+### Part a
+Using the `httr` package's `GET` function to download the retail.xlsx file to
+a local directory and then using the `read_xlsx` function to read the xlsx
+skipping the first row into a R Dataframe object.
+```{r Q2a}
+url <- "https://otexts.com/fpp2/extrafiles/retail.xlsx"
+GET(url, write_disk("retail.xlsx", overwrite=TRUE))
+retaildata <- readxl::read_xlsx("retail.xlsx", skip=1)
+```
+
+### Part b
+```{r Q2b}
+# choosing column 'A3349721R'
+myts <- ts(retaildata[, "A3349721R"], frequency = 12, start = c(1982, 1),
+           end = c(2005, 6))
+head(myts)
+tail(myts, 6)
+```
+
+### Part c
+Using the `autoplot` function on a `ts` dataset, we can see that there is indeed
+a trend and seasonality in the graph.                                            
+
+```{r Q2c1}
+autoplot(myts)
+```
+
+Using the `ggseasonplot` function, one can confirm what we deduced from the
+above plot that there is slight seasonlity pattern also in the data. Thus
+September is the peak and March is the trough season.
+```{r Q2c2}
+ggseasonplot((myts))
+```
+
+Using `subseriesplot` we can see the seasonality for each month for the time
+span of time series. We can clearly see that September is the peak and March and
+November are the troughs.           
+```{r Q2c3}
+ggsubseriesplot(myts)
+```
+
+A lag plot shows the scatter plots for each month in which all the graphs show
+linearity. This suggests that a strong autocorrelations exits.                                 
+```{r Q2c4}
+gglagplot(myts)
+```
+
+Using the `ggACF` function to plot ACF graphs with differrent lag periods shows
+that there exists strong autocorrelations. We can also see that with the
+increase in lag period the graphs show decreasing positive values. With
+increasing lag periods in the second graph we can also see a slight seasonal
+pattern.                         
+
+```{r Q2c5}
+ggAcf(myts, lag = 12)
+
+ggAcf(myts, lag = 30)
+
+```
+### Summary
+As we can clearly see that out data in second questions has a positive trend
+with a slight seasonality and with no cyclic patterns.
+This can be corroborated by plotting using the decompose function and then
+autoplotting.              
+
+```{r Q2Summary}
+decmyts <-decompose(myts)
+autoplot(decmyts, type="multiplicative")
+```
