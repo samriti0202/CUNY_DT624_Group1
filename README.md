@@ -1,1 +1,1 @@
-# CUNY_DT624_Group1
+# CUNY MSDS Data 624 Summer 2020 Group 1 Repository
