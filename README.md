@@ -13,7 +13,7 @@ docx to Professor Burke
 ### HW Set 1: Due 6/20/2020
  1. HA 2.1: Vishal Arora
  1. HA 2.3: Vishal Arora
- 1. HA 6.2:
+ 1. HA 6.2: Avraham Adler
  1. KJ 3.1:
  1. KJ 3.2:
  1. HA 7.1:
