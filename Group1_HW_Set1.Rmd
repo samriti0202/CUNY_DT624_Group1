@@ -23,7 +23,6 @@ represent.
 ### Part 1
 ```{r Q1setup, echo=TRUE, warning=FALSE, out.width="100%", message=FALSE}
 library(fpp2)
-# library(xlsx)
 library(httr)
 ```
 Using the help function to know more about the various datasets like a short
