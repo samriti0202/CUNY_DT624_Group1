@@ -261,6 +261,11 @@ The results will be graphically displayed using `autoplot` from `ggplot2`.
 autoplot(DecomPlastics)
 ```
 
+The seasonally-adjusted data is \(\hat{T}_n\hat{R}_n\) which is plotted below.
+```{r Q62d_1}
+plot(Tn * Rn, ylab = "Seasonally-Adjusted")
+```
+
 ### Part e.
 ```{r Q62e_1}
 plastics2 <- plastics
