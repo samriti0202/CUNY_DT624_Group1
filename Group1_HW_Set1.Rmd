@@ -20,7 +20,7 @@ represent.
  was it?
  
 ## Answers
-### Part 1
+### Help Functions
 ```{r Q1setup, echo=TRUE, warning=FALSE, out.width="100%", message=FALSE}
 library(fpp2)
 library(httr)
@@ -149,6 +149,7 @@ ggAcf(myts, lag = 12)
 ggAcf(myts, lag = 30)
 
 ```
+
 ### Summary
 As we can clearly see that out data in second questions has a positive trend
 with a slight seasonality and with no cyclic patterns.
