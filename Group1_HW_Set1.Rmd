@@ -10,7 +10,7 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Question HA 2.1 (Vishal Arora)
+# Question HA 2.1
 ## Questions
 Use the help function to explore what the series gold, woolyrnq and gas
 represent.
@@ -75,7 +75,7 @@ which.max(gold)
 gold[which.max(gold)]
 ```
 
-# Question HA 2.3 (Vishal Arora)
+# Question HA 2.3
 ## Questions
 Download some monthly Australian retail data from the
 [book website](http://otexts.com/fpp2/extrafiles/tute1.csv). These represent
@@ -172,7 +172,7 @@ decmyts <-decompose(myts)
 autoplot(decmyts, type="multiplicative")
 ```
 
-# Question HA 6.2 (Avraham Adler)
+# Question HA 6.2
 ## Question
 The `plastics` data set consists of the monthly sales (in thousands) of product
 A for a plastics manufacturer for five years.
@@ -268,12 +268,12 @@ graphical interpretation of part a.
 
 ### Part d.
 The results will be graphically displayed using `autoplot` from `ggplot2`.
-```{r Q62d_1_i}
+```{r Q62d_1}
 autoplot(DecomPlastics)
 ```
 
 The seasonally-adjusted data is \(\hat{T}_n\hat{R}_n\) which is plotted below.
-```{r Q62d_1_ii}
+```{r Q62d_2}
 plot(Tn * Rn, ylab = "Seasonally-Adjusted")
 ```
 
