@@ -25,6 +25,7 @@ represent.
 library(fpp2)
 library(httr)
 ```
+
 Using the help function to know more about the various datasets like a short
 description about the dataset, the format of the dataset---which in this case is
 Time Series data for all three, what is the source of the data, and an example
@@ -35,6 +36,14 @@ help(gold)
 help("woolyrnq")
 help("gas")
 ```
+
+According to the help function, the datasets are described as so:
+
+gold - This dataset represents the daily morning gold prices in US dollars from January 1st, 1985 to March 31st, 1989.
+
+woolyrnq - This dataset represents the quarterly production of woollen yarn in Australia in tons from March 1965 to September 1994.
+
+gas - This dataset represents the Australian monthly gas prodcution from 1956 to 1995.
 
 ### Part a
 Using the `autoplot` function can give us a graphic disply of `ts` datasets.
@@ -58,10 +67,12 @@ frequency(gas)
 ```
 
 ### Part c
-Using the `which.max()` function gives us the outlier with maximum value as also
-seen from the graph above, which is 770.
+
+Using the `which.max()` function gives us the index of the outlier with maximum value. It is important to note that the `which.max()` function does not return the actual max value, but the index in the vector where the max value is located. After plugging in the `which.max()` index value into the time series vector, we get the true maximum value, which is 593.7.
+
 ```{r Q1whichmax}
 which.max(gold)
+gold[which.max(gold)]
 ```
 
 # Question HA 2.3 (Vishal Arora)
@@ -257,12 +268,12 @@ graphical interpretation of part a.
 
 ### Part d.
 The results will be graphically displayed using `autoplot` from `ggplot2`.
-```{r Q62d_1}
+```{r Q62d_1_i}
 autoplot(DecomPlastics)
 ```
 
 The seasonally-adjusted data is \(\hat{T}_n\hat{R}_n\) which is plotted below.
-```{r Q62d_1}
+```{r Q62d_1_ii}
 plot(Tn * Rn, ylab = "Seasonally-Adjusted")
 ```
 
