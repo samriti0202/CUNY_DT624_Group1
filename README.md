@@ -33,4 +33,4 @@ docx to Professor Burke
  1. KJ 8.7:
  
 ### Project 1: Due 6/27/2020
-### Project 1: Due 7/19/2020
+### Project 2: Due 7/19/2020
