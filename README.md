@@ -6,7 +6,7 @@ our work, and then PR back into master so that we can all work on seperate
 questions simultaneously
 
 ## Group Representative
-When we are done, and before the deadline XXXXXXXXXXXX will email the Rmd and
+When we are done, and before the deadline Sam Bellows will email the Rmd and
 docx to Professor Burke
 
 ## Assignments
@@ -14,10 +14,10 @@ docx to Professor Burke
  1. HA 2.1: Vishal Arora
  1. HA 2.3: Vishal Arora
  1. HA 6.2: Avraham Adler
- 1. KJ 3.1:
- 1. KJ 3.2:
- 1. HA 7.1: Avraham Adler
- 1. HA 7.3: Avraham Adler
+ 1. KJ 3.1: Avraham Adler
+ 1. KJ 3.2: Avraham Adler
+ 1. HA 7.1: Austin Chan
+ 1. HA 7.3: Austin Chan
  1. HA 8.1:
  1. HA 8.2: Sam Bellows
  1. HA 8.6: Sam Bellows
