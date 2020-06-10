@@ -321,3 +321,34 @@ no effect at all, as that is outside the acceptable window for a 2x12 moving
 average. In this case, interestingly, one of the known shortcomings of
 classical decomposition---its inability to process the ends of the time
 series---here becomes valuable!
+
+# Question KJ 3.1
+## Question
+The UC Irvine Machine Learning Repository[^a] contains a data set related
+to glass identification. The data consist of 214 glass samples labeled as one
+of seven class categories. There are nine predictors, including the refractive
+index and percentages of eight elements: Na, Mg, Al, Si, K, Ca, Ba, and Fe.
+The data can be accessed via:
+```{r QKJ31}
+library(mlbench)
+data(Glass)
+str(Glass)
+```
+
+ (a) Using visualizations, explore the predictor variables to understand their
+ distributions as well as the relationships between predictors.
+ (b) Do there appear to be any outliers in the data? Are any predictors skewed?
+ (c) Are there any relevant transformations of one or more predictors that might
+ improve the classification model?
+ 
+[^a]: http://archive.ics.uci.edu/ml/index.html
+ 
+## Answer
+### Part (a)
+The first step is to plot the predictors on their native scale. A call to `plot`
+will produce a set of scatterplots for each variable against the other. Since
+there are alot of plots and 214 observations in each, the period will be used
+for points instead of the default open circle.
+```{r Q31a1}
+plot(Glass, pch = ".")
+```
