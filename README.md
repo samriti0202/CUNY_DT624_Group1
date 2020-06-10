@@ -19,9 +19,9 @@ docx to Professor Burke
  1. HA 7.1:
  1. HA 7.3:
  1. HA 8.1:
- 1. HA 8.2:
- 1. HA 8.6:
- 1. HA 8.8:
+ 1. HA 8.2: Sam Bellows
+ 1. HA 8.6: Sam Bellows
+ 1. HA 8.8: Sam Bellows
  
 ### HW Set 2: Due 7/19/2020
  1. KJ 6.3:
