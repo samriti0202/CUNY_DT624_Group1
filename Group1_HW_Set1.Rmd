@@ -352,10 +352,92 @@ str(Glass)
  
 ## Answer
 ### Part (a)
-The first step is to plot the predictors on their native scale. A call to `plot`
-will produce a set of scatterplots for each variable against the other. Since
-there are alot of plots and 214 observations in each, the period will be used
-for points instead of the default open circle.
-```{r Q31a1}
-plot(Glass, pch = ".")
+#### Variable Distributions
+##### Empirical Distribution
+The very first step is to understand the data. The call to `str` in the question
+is very valuable. It tells us that we can naïvely expect that each of the values
+comes from a continuous distribution, since they are coded as floats/doubles.
+The exception is the `Type` variable which is a factor which takes 6 discrete
+values. If we wanted to use this as a predictor in a regression we would have to
+consider what we called **dummy variables** back in twentieth-century linear
+programming, and what the cool kids of today call **one-hot encoding**.
+
+The first visualization step is usually to plot the empirical distribution of
+each of the variables. Below are histograms and kernel density plots for each of
+the 10 variables. To make life a bit simpler, the factor `Type` will be
+converted to the eponynous integer. Also, since there will be a few calls to a
+set of scatterplots, a helper function `scatterbox` will be defined.
+```{r Q31aHist, fig.width = 9L, fig.height = 10L}
+Glass$Type <- as.integer(levels(Glass$Type))[Glass$Type]
+scatterbox <- function(df, box, useLast = TRUE) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]] # Thanks for nothing, scale!!
+    if (!useLast) ndf <- ndf[-length(ndf)]
+    for (i in seq_along(ndf)) {
+        data <- unlist(df[, i])
+        hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+             xlab = ndf[i], freq = FALSE)
+        lines(density(data, kernel = "ep"), col = 'blue')
+    }
+    par(mfrow = c(1, 1))
+}
+scatterbox(Glass, c(4, 3))
 ```
+
+The plots show that some of the variable such as Potassium (**K**), Barium
+(**Ba**), and Iron (**Fe**) have classic very right-tailed skew distributions.
+Others, such as Magnesium (**Mg**), Calcium (**Ca**), and the refractive index
+(**RI**) have slightly right-tailed distributions with noticeable observations
+below the mode. Still others, such as Silicon (**Si**), Sodium (**Na**), and
+Aluminum (**Al**) are borderline symmetrical. Lastly, Magnesium (**Mg**) doesn't
+fit into any category. Rather it has peaks at the ends and dips in the
+middle. It almost looks like some kind of beta distribution would be appropriate.
+**Type** doesn't have an immediately recognizable shape either, but as it is a
+categorical variable, that is less concerning.
+
+##### Scaled Distribution
+The next step, with continuous data at least, is to look at the data after
+transformations. The simplest is the Z-scaling of the data, which subtracts the
+mean and divides by the standard deviation of each variable. This sets all means
+to 0 and puts the variabiliyu on the same scale. This which will obviously not
+be applied to the `Type` variable.
+```{r Q31aZ, fig.width = 9L, fig.height = 10L}
+scatterbox(scale(Glass), box = c(3, 3), useLast = FALSE)
+```
+
+Unfortuately, this did not help matters much.
+
+##### Logarithmic Transformation
+A transformation often used to address skew in particular is to log the data.
+Again, this is inappropriate for the `Type` variable.
+```{r Q31aL, fig.width = 9L, fig.height = 8L}
+scatterbox(log(Glass), box = c(3, 3), useLast = FALSE)
+```
+
+Now, some of the distributions begin to look more symmetrical, which should put
+us in mind of the *lognormal* distribution. Magnesium, however, becomes
+heavily **left**-tailed. This phenomenon is often seen in *gamma* distributed
+variables and is very clear in *beta*-distributed random variables where both
+shape parameters are near 0.5. This fits very nicely with our observation above.
+
+##### Other transformations
+Other transformations include power transformations and the Box-Cox family of
+transforms which, given the parameter \(\lambda\), can include many types of 
+transforms such as square, inverse, and power. An example of the transform with
+\(\lambda = -1.2\) is shown below.
+```{r Q31aBX, fig.width = 9L, fig.height = 10L}
+bxcx <- function(x, l) {
+    if (l == 0) {
+        log(x)
+    } else {
+        (x ^ l - 1) / l
+    }
+}
+scatterbox(bxcx(Glass, -1.2), box = c(3, 3), useLast = FALSE)
+```
+
+There are packages in `R`, such as the `car` package, which will use maximum
+likelihood to fit \(\lambda_i\) for each variable \(i\) in the dataset.
+
+#### Variable Correlation
+To
