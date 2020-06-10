@@ -31,7 +31,7 @@ description about the dataset, the format of the dataset---which in this case is
 Time Series data for all three, what is the source of the data, and an example
 of how to display the data to learn about it using the `tsdisplay` function.           
 
-```{r Q1help}
+```{r Q1help, eval=FALSE}
 help(gold)
 help("woolyrnq")
 help("gas")
