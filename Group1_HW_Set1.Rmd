@@ -422,9 +422,18 @@ shape parameters are near 0.5. This fits very nicely with our observation above.
 
 ##### Other transformations
 Other transformations include power transformations and the Box-Cox family of
-transforms which, given the parameter \(\lambda\), can include many types of 
-transforms such as square, inverse, and power. An example of the transform with
-\(\lambda = -1.2\) is shown below.
+transforms with parameter \(\lambda\):
+\[
+x^* =
+\begin{cases}
+\frac{x^\lambda - 1}{\lambda}\qquad &\textrm{if }\lambda \neq 0\\
+\log(x) &\textrm{if }\lambda = 0
+\end{cases}
+\]
+
+This transformation encompasses many power transformations depending on the
+value of \(\lambda\). An example of the transform with \(\lambda = -1.2\) is
+shown below.
 ```{r Q31aBX, fig.width = 9L, fig.height = 10L}
 bxcx <- function(x, l) {
     if (l == 0) {
