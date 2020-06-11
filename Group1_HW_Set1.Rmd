@@ -351,9 +351,10 @@ str(Glass)
 [^a]: http://archive.ics.uci.edu/ml/index.html
  
 ## Answer
-### Part (a)
-#### Variable Distributions
-##### Empirical Distribution
+The answer will combine parts (a), (b), and (c) into one narrative as it
+progresses.
+
+### Variable Empirical Distributions
 The very first step is to understand the data. The call to `str` in the question
 is very valuable. It tells us that we can naïvely expect that each of the values
 comes from a continuous distribution, since they are coded as floats/doubles.
@@ -367,7 +368,7 @@ each of the variables. Below are histograms and kernel density plots for each of
 the 10 variables. To make life a bit simpler, the factor `Type` will be
 converted to the eponynous integer. Also, since there will be a few calls to a
 set of scatterplots, a helper function `scatterbox` will be defined.
-```{r Q31aHist, fig.width = 9L, fig.height = 10L}
+```{r Q31Hist, fig.width = 9L, fig.height = 10L}
 Glass$Type <- as.integer(levels(Glass$Type))[Glass$Type]
 scatterbox <- function(df, box, useLast = TRUE) {
     par(mfrow = box)
@@ -393,34 +394,65 @@ Aluminum (**Al**) are borderline symmetrical. Lastly, Magnesium (**Mg**) doesn't
 fit into any category. Rather it has peaks at the ends and dips in the
 middle. It almost looks like some kind of beta distribution would be appropriate.
 **Type** doesn't have an immediately recognizable shape either, but as it is a
-categorical variable, that is less concerning.
+categorical variable, that is less concerning. We can check for skewness using
+the sample skew parameter.[^Sk]
 
-##### Scaled Distribution
+[^Sk]: There are multiple definitions of the empirical skew function. Joanes &
+Gill (1997) define three of them, referred to as \(\mathbf{g_1}\),
+\(\mathbf{G_1}\), and \(\mathbf{b_1}\). The `skewness` function in the `e1071`
+package allows for choosing which type should be used. Here, Kuhn & Johnson use
+a formula which is none of those three, but is actually
+\(\frac{\mathbf{b_1}\cdot n}{n-1}\).
+
+    Joanes, D. N. and Gill, C. A. (1998) Comparing Measures of Sample Skewness
+    and Kurtosis. *Journal of the Royal Statistical Society.*
+    *Series D (The Statistician)* **47**(1), 183--189.
+    https://www.jstor.org/stable/2988433
+    
+```{r Q31Skew}
+KJskew <- function(x) {
+    sum((x - mean(x, na.rm = TRUE)) ^ 3, na.rm = TRUE) /
+        (sd(x, na.rm = TRUE) ^ 3 * (length(x) - 1))
+}
+apply(Glass, 2L, KJskew)
+```
+
+As seen in the histograms, `Ca`, `K`, and `Ba` show the heaviest right skew.
+
+### Transforms
+#### Scaling and Centering
 The next step, with continuous data at least, is to look at the data after
 transformations. The simplest is the Z-scaling of the data, which subtracts the
 mean and divides by the standard deviation of each variable. This sets all means
-to 0 and puts the variabiliyu on the same scale. This which will obviously not
+to 0 and puts the variability on the same scale. This which will obviously not
 be applied to the `Type` variable.
-```{r Q31aZ, fig.width = 9L, fig.height = 10L}
+```{r Q31Scale, fig.width = 9L, fig.height = 8L}
 scatterbox(scale(Glass), box = c(3, 3), useLast = FALSE)
+apply(scale(Glass), 2L, KJskew)
 ```
 
-Unfortuately, this did not help matters much.
+Unfortuately, this did not help matters much and the skew not at all, which
+stands to reason, as centering and scaling do not materially address skew.
 
-##### Logarithmic Transformation
+#### Logarithmic Transformation
 A transformation often used to address skew in particular is to log the data.
 Again, this is inappropriate for the `Type` variable.
-```{r Q31aL, fig.width = 9L, fig.height = 8L}
+```{r Q31Log, fig.width = 9L, fig.height = 8L}
 scatterbox(log(Glass), box = c(3, 3), useLast = FALSE)
+apply(log(Glass), 2L, KJskew)
 ```
 
 Now, some of the distributions begin to look more symmetrical, which should put
 us in mind of the *lognormal* distribution. Magnesium, however, becomes
 heavily **left**-tailed. This phenomenon is often seen in *gamma* distributed
-variables and is very clear in *beta*-distributed random variables where both
+variables and is very clear in *beta* distributed random variables where both
 shape parameters are near 0.5. This fits very nicely with our observation above.
 
-##### Other transformations
+Note that many of the variables had observations of 0, which returns `-Inf` when
+logged. This is the reasons for the `Nan`s in the skew calculations. This also
+indicates that a log-transform may not be the best for those variables.
+
+#### Other Transformations
 Other transformations include power transformations and the Box-Cox family of
 transforms with parameter \(\lambda\):
 \[
@@ -432,9 +464,9 @@ x^* =
 \]
 
 This transformation encompasses many power transformations depending on the
-value of \(\lambda\). An example of the transform with \(\lambda = -1.2\) is
+value of \(\lambda\). An example of the transform with \(\lambda = 0.4\) is
 shown below.
-```{r Q31aBX, fig.width = 9L, fig.height = 10L}
+```{r Q31bxcx, fig.width = 9L, fig.height = 8L}
 bxcx <- function(x, l) {
     if (l == 0) {
         log(x)
@@ -442,11 +474,75 @@ bxcx <- function(x, l) {
         (x ^ l - 1) / l
     }
 }
-scatterbox(bxcx(Glass, -1.2), box = c(3, 3), useLast = FALSE)
+scatterbox(bxcx(Glass, 0.4), box = c(3, 3), useLast = FALSE)
+apply(bxcx(Glass, 0.4), 2L, KJskew)
 ```
 
-There are packages in `R`, such as the `car` package, which will use maximum
-likelihood to fit \(\lambda_i\) for each variable \(i\) in the dataset.
+Here, the Box-Cox transform did next to nothing for the skew of `RI` and `Mg`,
+but the skew of `K` and `Al` are greatly reduced. The effect on the other
+variables lies somewhere in between. There are packages in `R`, such as the
+`car` package, which will use maximum likelihood to fit \(\lambda_i\) for each
+variable \(i\) in the dataset.
 
-#### Variable Correlation
-To
+### Variable Correlations
+To visually inspect correlation, the simplest approach is to create scatterplots
+of each variable against each other.
+```{r Q31Scat, fig.width = 9L, fig.height = 8L}
+plot(Glass, pch = ".")
+```
+
+With 10 variables there are 45 possible pairs, most of which don't show
+overwhelming correlations. However, there are some visually apparent
+relationships. For example,  `Refractive Index` seems to be highly positively
+correlated with `Ca` and somewhat negatively correlated with `Si`.
+
+### Outliers
+The scatterplot doesn't show strong evidence of outliers. However, boxplots or
+violin plots are often useful in identifying outliers.
+
+```{r Q31bxplt, fig.width = 9L, fig.height = 8L}
+boxplot(Glass, pch = 16)
+```
+
+There are clearly a few observations for each variable which exceed 1.5 times
+the IQR, the majority of which are in Calcium.
+
+The book discusses the spatial sign transform, which is probably not appropriate
+for this data, but it can be tried for fun.
+```{r Q31aSpS, fig.width = 9L, fig.height = 8L}
+SpatSignT <- function(df) {
+  dfS <- as.data.frame(scale(df))
+  return(dfS / sqrt(rowSums(dfS ^ 2)))
+}
+```
+
+For this example, the focus will be on the relationship between `Ca` and `Ba`
+which shows two "clusters" of outliers.
+
+```{r Q31SpSEx, fig.width = 4L, fig.height = 4.5}
+BaCa <- data.frame(Ba = Glass$Ba, Ca = Glass$Ca)
+outliers1 <- which(BaCa$Ca > 8 & BaCa$Ba < 2 & BaCa$Ba > 0)
+outliers2 <- c(which(BaCa$Ca > 12 & BaCa$Ba > 2.5),
+              which(BaCa$Ca < 8 & BaCa$Ba > 1))
+plot(BaCa[-c(outliers1, outliers1), ], xlim = c(0, 3.5), ylim = c(5, 17))
+points(BaCa[outliers1, ], col = 'blue', pch = 16)
+points(BaCa[outliers2, ], col = 'red', pch = 16)
+BaCaSS <- SpatSignT(BaCa)
+plot(BaCaSS[-c(outliers1, outliers1), ], xlim = c(-1, 1), y = c(-1, 1))
+points(BaCaSS[outliers1, ], col = 'blue', pch = 16)
+points(BaCaSS[outliers2, ], col = 'red', pch = 16)
+```
+
+The spatial sign transformation does indicate that the clusters in normal space
+do tend to inhabit different areas of the unit hypersphere. How that can be
+leveraged for analysis is somewhat more complicated.
+
+### Summary
+This writeup has investigated the `Glass` data from the `mlbench` package. The
+native variables visually exhibit a range of distributions from the highly
+skewed to the nearly symmetrical, with the standard complement of outliers. A
+sequence of transformations were applied to address some of these issues and
+the results visualized as well. Further areas for investigation would include
+dimensional reduction techniques, especiallt PCA, which should help to reduce
+the feature set from 10 to something more manageable which still captures the
+predominance of the variability in the data.
