@@ -1,12 +1,12 @@
 ---
-title: "CUNY DT 624---Summer 2020"
-author: 'Group 1: Avraham Adler, Vishal Arora, Gabrielle Bartomeo, Samuel Bellows,
-  Austin Chan'
+title: "CUNY DT 624"
+subtitle: "Homework Set 1"
+author: "Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan"
 date: "Summer 2020"
 output:
-  html_document:
-    df_print: paged
-subtitle: Homework Set 1
+  word_document:
+    toc: true
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
@@ -34,7 +34,7 @@ description about the dataset, the format of the dataset---which in this case is
 Time Series data for all three, what is the source of the data, and an example
 of how to display the data to learn about it using the `tsdisplay` function.           
 
-```{r Q1help}
+```{r Q1help, eval=FALSE}
 help(gold)
 help("woolyrnq")
 help("gas")
@@ -42,11 +42,14 @@ help("gas")
 
 According to the help function, the datasets are described as so:
 
-gold - This dataset represents the daily morning gold prices in US dollars from January 1st, 1985 to March 31st, 1989.
+gold - This dataset represents the daily morning gold prices in US dollars from
+January 1st, 1985 to March 31st, 1989.
 
-woolyrnq - This dataset represents the quarterly production of woollen yarn in Australia in tons from March 1965 to September 1994.
+woolyrnq - This dataset represents the quarterly production of woollen yarn in
+Australia in tons from March 1965 to September 1994.
 
-gas - This dataset represents the Australian monthly gas prodcution from 1956 to 1995.
+gas - This dataset represents the Australian monthly gas prodcution from 1956 to
+1995.
 
 ### Part a
 Using the `autoplot` function can give us a graphic disply of `ts` datasets.
@@ -71,7 +74,11 @@ frequency(gas)
 
 ### Part c
 
-Using the `which.max()` function gives us the index of the outlier with maximum value. It is important to note that the `which.max()` function does not return the actual max value, but the index in the vector where the max value is located. After plugging in the `which.max()` index value into the time series vector, we get the true maximum value, which is 593.7.
+Using the `which.max()` function gives us the index of the outlier with maximum
+value. It is important to note that the `which.max()` function does not return
+the actual max value, but the index in the vector where the max value is
+located. After plugging in the `which.max()` index value into the time series
+vector, we get the true maximum value, which is 593.7.
 
 ```{r Q1whichmax}
 which.max(gold)
@@ -325,15 +332,381 @@ average. In this case, interestingly, one of the known shortcomings of
 classical decomposition---its inability to process the ends of the time
 series---here becomes valuable!
 
+# Question KJ 3.1
+## Question
+The UC Irvine Machine Learning Repository[^a] contains a data set related
+to glass identification. The data consist of 214 glass samples labeled as one
+of seven class categories. There are nine predictors, including the refractive
+index and percentages of eight elements: Na, Mg, Al, Si, K, Ca, Ba, and Fe.
+The data can be accessed via:
+```{r QKJ31}
+library(mlbench)
+data(Glass)
+str(Glass)
+```
+
+ (a) Using visualizations, explore the predictor variables to understand their
+ distributions as well as the relationships between predictors.
+ (b) Do there appear to be any outliers in the data? Are any predictors skewed?
+ (c) Are there any relevant transformations of one or more predictors that might
+ improve the classification model?
+ 
+[^a]: http://archive.ics.uci.edu/ml/index.html
+ 
+## Answer
+The answer will combine parts (a), (b), and (c) into one narrative as it
+progresses.
+
+### Variable Empirical Distributions
+The very first step is to understand the data. The call to `str` in the question
+is very valuable. It tells us that we can naïvely expect that each of the values
+comes from a continuous distribution, since they are coded as floats/doubles.
+The exception is the `Type` variable which is a factor which takes 6 discrete
+values. If we wanted to use this as a predictor in a regression we would have to
+consider what we called **dummy variables** back in twentieth-century linear
+programming, and what the cool kids of today call **one-hot encoding**.
+
+The first visualization step is usually to plot the empirical distribution of
+each of the variables. Below are histograms and kernel density plots for each of
+the 10 variables. To make life a bit simpler, the factor `Type` will be
+converted to the eponynous integer. Also, since there will be a few calls to a
+set of scatterplots, a helper function `histbox` will be defined.
+```{r Q31Hist, fig.width = 9L, fig.height = 10L}
+Glass$Type <- as.integer(levels(Glass$Type))[Glass$Type]
+histbox <- function(df, box, useLast = TRUE) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]] # Thanks for nothing, scale!!
+    if (!useLast) ndf <- ndf[-length(ndf)]
+    for (i in seq_along(ndf)) {
+        data <- unlist(df[, i])
+        hist(data, breaks = "fd", main = paste("Histogram of", ndf[i]),
+             xlab = ndf[i], freq = FALSE)
+        lines(density(data, kernel = "ep"), col = 'blue')
+    }
+    par(mfrow = c(1, 1))
+}
+histbox(Glass, c(4, 3))
+```
+
+The plots show that some of the variable such as Potassium (**K**), Barium
+(**Ba**), and Iron (**Fe**) have classic very right-tailed skew distributions.
+Others, such as Magnesium (**Mg**), Calcium (**Ca**), and the refractive index
+(**RI**) have slightly right-tailed distributions with noticeable observations
+below the mode. Still others, such as Silicon (**Si**), Sodium (**Na**), and
+Aluminum (**Al**) are borderline symmetrical. Lastly, Magnesium (**Mg**) doesn't
+fit into any category. Rather it has peaks at the ends and dips in the
+middle. It almost looks like some kind of beta distribution would be appropriate.
+**Type** doesn't have an immediately recognizable shape either, but as it is a
+categorical variable, that is less concerning. We can check for skewness using
+the sample skew parameter.[^Sk]
+
+[^Sk]: There are multiple definitions of the empirical skew function. Joanes &
+Gill (1997) define three of them, referred to as \(\mathbf{g_1}\),
+\(\mathbf{G_1}\), and \(\mathbf{b_1}\). The `skewness` function in the `e1071`
+package allows for choosing which type should be used. Here, Kuhn & Johnson use
+a formula which is none of those three, but is actually
+\(\frac{\mathbf{b_1}\cdot n}{n-1}\).
+
+    Joanes, D. N. and Gill, C. A. (1998) Comparing Measures of Sample Skewness
+    and Kurtosis. *Journal of the Royal Statistical Society.*
+    *Series D (The Statistician)* **47**(1), 183--189.
+    https://www.jstor.org/stable/2988433
+    
+```{r Q31Skew}
+KJskew <- function(x) {
+    sum((x - mean(x, na.rm = TRUE)) ^ 3, na.rm = TRUE) /
+        (sd(x, na.rm = TRUE) ^ 3 * (length(x) - 1))
+}
+apply(Glass, 2L, KJskew)
+```
+
+As seen in the histograms, `Ca`, `K`, and `Ba` show the heaviest right skew.
+
+### Transforms
+#### Scaling and Centering
+The next step, with continuous data at least, is to look at the data after
+transformations. The simplest is the Z-scaling of the data, which subtracts the
+mean and divides by the standard deviation of each variable. This sets all means
+to 0 and puts the variability on the same scale. This which will obviously not
+be applied to the `Type` variable.
+```{r Q31Scale, fig.width = 9L, fig.height = 8L}
+histbox(scale(Glass), box = c(3, 3), useLast = FALSE)
+apply(scale(Glass), 2L, KJskew)
+```
+
+Unfortuately, this did not help matters much and the skew not at all, which
+stands to reason, as centering and scaling do not materially address skew.
+
+#### Logarithmic Transformation
+A transformation often used to address skew in particular is to log the data.
+Again, this is inappropriate for the `Type` variable.
+```{r Q31Log, fig.width = 9L, fig.height = 8L}
+histbox(log(Glass), box = c(3, 3), useLast = FALSE)
+apply(log(Glass), 2L, KJskew)
+```
+
+Now, some of the distributions begin to look more symmetrical, which should put
+us in mind of the *lognormal* distribution. Magnesium, however, becomes
+heavily **left**-tailed. This phenomenon is often seen in *gamma* distributed
+variables and is very clear in *beta* distributed random variables where both
+shape parameters are near 0.5. This fits very nicely with our observation above.
+
+Note that many of the variables had observations of 0, which returns `-Inf` when
+logged. This is the reasons for the `Nan`s in the skew calculations. This also
+indicates that a log-transform may not be the best for those variables.
+
+#### Other Transformations
+Other transformations include power transformations and the Box-Cox family of
+transforms with parameter \(\lambda\):
+\[
+x^* =
+\begin{cases}
+\frac{x^\lambda - 1}{\lambda}\qquad &\textrm{if }\lambda \neq 0\\
+\log(x) &\textrm{if }\lambda = 0
+\end{cases}
+\]
+
+This transformation encompasses many power transformations depending on the
+value of \(\lambda\). An example of the transform with \(\lambda = 0.4\) is
+shown below.
+```{r Q31bxcx, fig.width = 9L, fig.height = 8L}
+bxcx <- function(x, l) {
+    if (l == 0) {
+        log(x)
+    } else {
+        (x ^ l - 1) / l
+    }
+}
+histbox(bxcx(Glass, 0.4), box = c(3, 3), useLast = FALSE)
+apply(bxcx(Glass, 0.4), 2L, KJskew)
+```
+
+Here, the Box-Cox transform did next to nothing for the skew of `RI` and `Mg`,
+but the skew of `K` and `Al` are greatly reduced. The effect on the other
+variables lies somewhere in between. There are packages in `R`, such as the
+`car` package, which will use maximum likelihood to fit \(\lambda_i\) for each
+variable \(i\) in the dataset.
+
+### Variable Correlations
+To visually inspect correlation, the simplest approach is to create scatterplots
+of each variable against each other.
+```{r Q31Scat, fig.width = 9L, fig.height = 8L}
+plot(Glass, pch = ".")
+```
+
+With 10 variables there are 45 possible pairs, most of which don't show
+overwhelming correlations. However, there are some visually apparent
+relationships. For example,  `Refractive Index` seems to be highly positively
+correlated with `Ca` and somewhat negatively correlated with `Si`.
+
+### Outliers
+The scatterplot doesn't show strong evidence of outliers. However, boxplots or
+violin plots are often useful in identifying outliers.
+
+```{r Q31bxplt, fig.width = 9L, fig.height = 8L}
+boxplot(Glass, pch = 16)
+```
+
+There are clearly a few observations for each variable which exceed 1.5 times
+the IQR, the majority of which are in Calcium.
+
+The book discusses the spatial sign transform, which is probably not appropriate
+for this data, but it can be tried for fun.
+```{r Q31aSpS, fig.width = 9L, fig.height = 8L}
+SpatSignT <- function(df) {
+  dfS <- as.data.frame(scale(df))
+  return(dfS / sqrt(rowSums(dfS ^ 2)))
+}
+```
+
+For this example, the focus will be on the relationship between `Ca` and `Ba`
+which shows two "clusters" of outliers.
+
+```{r Q31SpSEx, fig.width = 4L, fig.height = 4.5}
+BaCa <- data.frame(Ba = Glass$Ba, Ca = Glass$Ca)
+outliers1 <- which(BaCa$Ca > 8 & BaCa$Ba < 2 & BaCa$Ba > 0)
+outliers2 <- c(which(BaCa$Ca > 12 & BaCa$Ba > 2.5),
+              which(BaCa$Ca < 8 & BaCa$Ba > 1))
+plot(BaCa[-c(outliers1, outliers1), ], xlim = c(0, 3.5), ylim = c(5, 17))
+points(BaCa[outliers1, ], col = 'blue', pch = 16)
+points(BaCa[outliers2, ], col = 'red', pch = 16)
+BaCaSS <- SpatSignT(BaCa)
+plot(BaCaSS[-c(outliers1, outliers1), ], xlim = c(-1, 1), y = c(-1, 1))
+points(BaCaSS[outliers1, ], col = 'blue', pch = 16)
+points(BaCaSS[outliers2, ], col = 'red', pch = 16)
+```
+
+The spatial sign transformation does indicate that the clusters in normal space
+do tend to inhabit different areas of the unit hypersphere. How that can be
+leveraged for analysis is somewhat more complicated.
+
+### Summary
+This writeup has investigated the `Glass` data from the `mlbench` package. The
+native variables visually exhibit a range of distributions from the highly
+skewed to the nearly symmetrical, with the standard complement of outliers. A
+sequence of transformations were applied to address some of these issues and
+the results visualized as well. Further areas for investigation would include
+dimensional reduction techniques, especiallt PCA, which should help to reduce
+the feature set from 10 to something more manageable which still captures the
+predominance of the variability in the data.
+
+# Question KJ 3.2
+## Question
+The soybean data can also be found at the UC Irvine Machine Learning Repository.
+Data were collected to predict disease in 683 soybeans. The 35 predictors are
+mostly categorical and include information on the environmental conditions
+(e.g., temperature, precipitation) and plant conditions (e.g., left spots,
+mold growth). The outcome labels consist of 19 distinct classes. The data can be
+loaded via:
+```{r QKJ32q}
+library(mlbench)
+data(Soybean)
+## See ?Soybean for details
+```
+
+  (a) Investigate the frequency distributions for the categorical predictors.
+  Are any of the distributions degenerate in the ways discussed earlier in this
+  chapter?
+  (b) Roughly 18\% of the data are missing. Are there particular predictors that
+  are more likely to be missing? Is the pattern of missing data related to the
+  classes?
+  (c) Develop a strategy for handling missing data, either by eliminating
+  predictors or imputation.
+
+## Answer
+### Part (a)
+```{r QKJ32barbox}
+barbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]] # Thanks for nothing, scale!!
+    for (i in seq_along(ndf)) {
+        data <- unlist(df[, i])
+        plot(data, main = paste("PseudoHistogram of", ndf[i]), xlab = ndf[i])
+    }
+    par(mfrow = c(1, 1))
+}
+```
+
+The frequency of the categorical is shown below, both visually and tabularly:
+```{r QKJ32a1, fig.width = 9L, fig.height = 10L}
+for (i in seq_len(3)) {
+  barbox(Soybean[, seq_len(12) * i], c(4, 3))
+}
+apply(Soybean, 2, function(x) length(unique(x)))
+```
+
+From the above, we see that there is no mathematically degenerate distribution,
+in that every catgeory has at least one instance of more than one variable type.
+Furthermore, the number of unique values being small in respect of the number of
+samples is not a significant issue, as most of these are dummy/indicator
+variables for the categories. The key test will be the ratio of most frequent to
+the second most frequent observation in each category.
+```{r QKJ32a2}
+nS <- names(Soybean)
+soyRatios <- data.frame(Variable = character(36), Ratio = double(36))
+for (i in seq_len(dim(Soybean)[[2]])) {
+  soyRatios[i, 1] <- nS[i]
+  soyRatios[i, 2] <- max(table(Soybean[, i])) /
+    max(table(Soybean[, i])[-which.max(table(Soybean[, i]))])
+}
+soyRatios[order(soyRatios$Ratio, decreasing = TRUE), ]
+soyRatios[which(soyRatios$Ratio > 20), ]
+```
+
+Here we see three categories which have a most-to-second most ratio of greater
+than 20, the value suggested by Kuhn & Johnson. These would be categories for
+consideration of removal or some other transform due to their imbalance.
+
+### Part (b)
+There clearly is a correlation between the Class and the "missingness" of data.
+```{r QKJ32b1, fig.width = 9L, fig.height = 10L}
+numClass <- length(levels(Soybean$Class))
+nameClass <- levels(Soybean$Class)
+NAList <- data.frame(Class = character(0), NACount = integer(0))
+par(mfrow = c(5, 4))
+for (i in seq_len(numClass)) {
+  NAList[i, ] <- c(nameClass[i],
+                   sum(is.na(Soybean[Soybean$Class == nameClass[i], ])))
+  barplot(apply(Soybean[Soybean$Class == nameClass[i], ], 2L,
+                function(x) sum(is.na(x)) / length(x)),
+          xlab = nameClass[i])
+}
+par(mfrow = c(1, 1))
+NAList
+```
+
+It's clear that classes 1, 9, 10, 14, and 16 have significant missing values
+where the other 14 classes have none. Note that the values are not the counts
+of records with missing values, but are indications of many missing values per
+record. As an aside, this kind of analysis would be done more easily using a
+package like `data.table` where operations could be done by group.
+```{r QKJ32b2}
+library(data.table)
+Sb <- as.data.table(Soybean)
+Sb[, .(NACount = sum(is.na(.SD))), keyby = Class]
+```
+
+Which gives us the same information as does base R but with less typing.
+
+### Part (c)
+Using `data.table` we can more easily get a better picture of the number of
+missing values and consider approaches to handling them. First, a list of the
+toal number of records for classes with missing data and then the distribution
+of the missing data by variable.
+missing data.
+```{r QKJ32c1}
+SbM <- Sb[Class %in% levels(Sb$Class)[c(1, 9, 10, 14, 16)]]
+SbM[, .N, keyby = Class]
+SbM[, lapply(.SD, function(x) sum(is.na(x))), keyby = Class]
+```
+
+When a variable is missing, it tends to be missing for the entirety of its
+class, as shown below:
+
+```{r QKJ32c2}
+SbM[, lapply(.SD, function(x) sum(is.na(x)) / length(x)), keyby = Class]
+```
+
+Lastly, of the 35 explanatory variables (not counting class itself), these
+missing classes tend to be missing a lot of them
+
+```{r QKJ32c3}
+SbM[, lapply(.SD, function(x) sum(is.na(x))), keyby = Class
+    ][, .(VarMissing = sum(.SD > 0) / length(.SD)), keyby = Class
+      ][order(-VarMissing)]
+```
+
+All the classes with missing data are missing more than 50\% of their data with
+the exception of the `diaporthe-pod-&-stem-blight` class. As such, unless we
+were using tree-based methods, I would suggest that the data observations of the
+first four classes which are missing be removed, as I would be loathe to impute
+more than half of the data points for that class. Especially if there will
+eventually be training-validation-testing splits.
+
+As for `diaporthe-pod-&-stem-blight`, on the one hand, there are only 15
+observations in the entire data set. On the other, it has around 2/3 of the
+features. A first strategy would be to see just how predictive the missing
+features are in the remaining data; perhaps they aren't of much value.
+Otherwise, I would have to weigh the time constraints of the project against the
+time needed to impute the 15 sets of 11 and 2 more sets of 6 missing data
+elements, and how much predictive power they will end up demonstrating.
+
+Lastly, using a dimensional reduction approach, such as PCA, on the non-missing
+data may be informative in that the variability reduction of a missing variable
+may be correlated enough with a non-missing variable to allow a focused model to
+be of value.
+
 # Question HA 7.1
 
-Consider the `pigs` series -- the number of pigs slaughtered in Victoria each month.
+Consider the `pigs` series -- the number of pigs slaughtered in Victoria each
+month.
 
 ## Answers
 
 ### Part a
 
-Use the `ses()` function in R to find the optimal values of alpha and l, and generate forecastss for the next four months.
+Use the `ses()` function in R to find the optimal values of alpha and l, and
+generate forecastss for the next four months.
 
 ```{r Q71a_1}
 pigs_output = ses(pigs, h = 4)
@@ -341,7 +714,8 @@ pigs_output = ses(pigs, h = 4)
 summary(pigs_output$model)
 ```
 
-After running the `ses()` function on the `pigs` data, we can see that the optimal value for alpha is 0.2971 and the optimal value for l is 77260.0561.
+After running the `ses()` function on the `pigs` data, we can see that the
+optimal value for alpha is 0.2971 and the optimal value for l is 77260.0561.
 
 The forecast for the next four months is shown below:
 
@@ -351,7 +725,9 @@ pigs_output
 
 ### Part b
 
-Compute a 95% prediction interval for the first forecast using predicted value +/- 1.96 * s, where s is the standard deviation of the residuals. Compare you interval with the interval produced by R.
+Compute a 95% prediction interval for the first forecast using predicted value
++/- 1.96 * s, where s is the standard deviation of the residuals. Compare your
+interval with the interval produced by R.
 
 ```{r Q71b_1}
 pigs_sd_resid = sd(pigs_output$residuals)
@@ -363,15 +739,25 @@ pigs_lb
 pigs_ub
 ```
 
-The interval that I created does not get wider as time increases, whereas the interval produced by R gradually gets wider as time increases. Using the basic confidence interval calculation with a simple point forecast that does not adjust for increasing uncertainty as time increases creates this static rectangle forecast. The output from R appears to adjust for this uncertainty.
+The interval that I created does not get wider as time increases, whereas the
+interval produced by R gradually gets wider as time increases. Using the basic
+confidence interval calculation with a simple point forecast that does not
+adjust for increasing uncertainty as time increases creates this static
+rectangle forecast. The output from R appears to adjust for this uncertainty.
 
 # Question HA 7.3
 
-Modify your function from the previous exercise t o return the sum of squared errors rather than the forecast of the next observation. Then use the `optim()` function to find the optimal values of alpha and l. Do you get the same values as the `ses()` function?
+Modify your function from the previous exercise t o return the sum of squared
+errors rather than the forecast of the next observation. Then use the `optim()`
+function to find the optimal values of alpha and l. Do you get the same values
+as the `ses()` function?
 
 ## Answers
 
-The function below calculates the SSE from a simple exponential smoothing model after inputing a specific alpha, level, and time series. The function takes the compnent form of the smoothing equation of the SES model and uses it to calculate the SSE.
+The function below calculates the SSE from a simple exponential smoothing model
+after inputing a specific alpha, level, and time series. The function takes the
+component form of the smoothing equation of the SES model and uses it to
+calculate the SSE.
 
 ```{r Q73_1}
 my_ses = function(y,pars = c(alpha,level)){
@@ -382,7 +768,7 @@ my_ses = function(y,pars = c(alpha,level)){
   l_t = vector(mode = "numeric",length = length(y) + 1)
   l_t[1] = level
   
-  for(item in seq(2,length(y) + 1)){
+  for (item in seq(2, length(y) + 1)) {
     
       l_t[item] = (alpha * y[item - 1]) + ((1 - alpha) * l_t[item - 1])
     
@@ -399,7 +785,9 @@ my_ses = function(y,pars = c(alpha,level)){
 my_ses(pigs,c(0.2971,77260.0561))
 ```
 
-The code below finds the optimal values of alpha and level using the `optim()` function. We can see that the values for alpha and level are nearly identical to the same parameters calculated using the `ses()` function.
+The code below finds the optimal values of alpha and level using the `optim()`
+function. We can see that the values for alpha and level are nearly identical to
+the same parameters calculated using the `ses()` function.
 
 ```{r Q73_2}
 optimal_values = optim(par = c(0.5, pigs[1]), y = pigs, fn = my_ses)
@@ -408,148 +796,175 @@ optimal_values$par[1]
 optimal_values$par[2]
 ```
 
-
 # Question HA 8.2
 ## Question
 
-A classic example of a non-stationary series is the daily closing IBM stock price series (data set ibmclose). Use R to plot the daily closing prices for IBM stock and the ACF and PACF. Explain how each plot shows that the series is non-stationary and should be differenced.
+A classic example of a non-stationary series is the daily closing IBM stock
+price series (data set `ibmclose`). Use R to plot the daily closing prices for
+IBM stock and the ACF and PACF. Explain how each plot shows that the series is
+non-stationary and should be differenced.
 
-```{r}
+```{r 82Q1}
 ibm <- ibmclose
 autoplot(ibm)
 ```
 
-The timeseries appears to have some trend component, which would make the data non-stationary. Taking either the first or second difference should remove this trend and make the data stationary.
+The timeseries appears to have some trend component, which would make the data
+non-stationary. Taking either the first or second difference should remove this
+trend and make the data stationary.
 
-```{r}
+```{r 82Q2}
 ggAcf(ibm)
 ```
 
-Here we see an autocorrelation plot that agrees with our above assumptions; the decaying values are a clear sign of trend, and every possible lag has a significant autocorrelation, indicating non-stationary data.
+Here we see an autocorrelation plot that agrees with our above assumptions; the
+decaying values are a clear sign of trend, and every possible lag has a
+significant autocorrelation, indicating non-stationary data.
 
-```{r}
+```{r 82Q3}
 ggPacf(ibm)
 ```
 
-All of the autocorrelations are explainable by the first lag, the other correlations being significant are a product of this. Again, this correlation indicates non-stationary data which can likely be fixed by a first difference.
+All of the autocorrelations are explainable by the first lag, the other
+correlations being significant are a product of this. Again, this correlation
+indicates non-stationary data which can likely be fixed by a first difference.
 
 # Question HA 8.6
 ## Question
-
 Use R to simulate and plot some data from simple ARIMA models.
 
 ### Part A
-Use the following R code to generate data from an AR(1) model with  ϕ1 = 0.6 and σ2 = 1. The process starts with y1 = 0.
+Use the following R code to generate data from an AR(1) model with
+\(\phi_1 = 0.6\) and \(\sigma^2 = 1\). The process starts with \(y_1 = 0\).
 
-```{r}
+```{r 86a1}
 y <- ts(numeric(100))
 e <- rnorm(100)
-for(i in 2:100)
-  y[i] <- 0.6*y[i-1] + e[i]
+for (i in 2:100)
+  y[i] <- 0.6*y[i - 1] + e[i]
 ```
 
 ### Part B
-Produce a time plot for the series. How does the plot change as you change ϕ1?
+Produce a time plot for the series. How does the plot change as you change
+\(\phi_1\)?
 
-```{r}
-for(i in c(-0.8, -0.6, -0.4, -0.2, 0.2, 0.4, 0.6, 0.8)){
+```{r 86b1}
+for (i in c(-0.8, -0.6, -0.4, -0.2, 0.2, 0.4, 0.6, 0.8)) {
     y <- ts(numeric(100))
     e <- rnorm(100)
-    for(j in 2:100){
-        y[j] <- i*y[j-1] + e[j]
+    for (j in 2:100) {
+        y[j] <- i * y[j - 1] + e[j]
     }
     plot1 <- autoplot(y) + xlab(i)
     print(plot1)
 }
 ```
 
-The value chosen for phi affects how volatile the series is. Negative values close to -1 force the series to oscillate across the mean nearly every observation, whereas positive values for phi close to 1 show much less volatility and are smoother overall.
+The value chosen for \(\phi\) affects how volatile the series is. Negative
+values close to -1 force the series to oscillate across the mean nearly every
+observation, whereas positive values for \(\phi\) close to 1 show much less
+volatility and are smoother overall.
 
 ### Part C
-Write your own code to generate data from an MA(1) model with θ1 = 0.6 and σ2 = 1.
+Write your own code to generate data from an MA(1) model with \(\theta_1 = 0.6\)
+and \(\sigma^2 = 1\).
 
-```{r}
+```{r 86c1}
 set.seed(42)
-for (theta in c(-1, -0.6, -0.3, 0, 0.3, 0.6, 1)){
+for (theta in c(-1, -0.6, -0.3, 0, 0.3, 0.6, 1)) {
   y <- ts(numeric(100))
   e <- rnorm(100)
-  for(i in 2:100){
-    y[i] <- theta * e[i-1] + e[i]
+  for (i in 2:100) {
+    y[i] <- theta * e[i - 1] + e[i]
   }
   print(autoplot(y) + xlab(theta))
 }
 ```
 
 ### Part D
-Produce a time plot for the series. How does the plot change as you change θ1?
+Produce a time plot for the series. How does the plot change as you change
+\(\theta_1\)?
 
-As theta approaches 1, the time series appears to resemble a random walk. However, as theta approaches -1, the time series oscillates rapidly across the mean with almost every step in the series.
+As \(\theta\) approaches 1, the time series appears to resemble a random walk.
+However, as \(\theta\) approaches -1, the time series oscillates rapidly across
+the mean with almost every step in the series.
 
 ### Part E
-Generate data from an ARMA(1,1) model with ϕ1 = 0.6, 
-θ1 = 0.6 and σ2 = 1.
+Generate data from an ARMA(1,1) model with \(\phi_1 = 0.6, \theta_1 = 0.6\), and
+\(\sigma^2 = 1\).
 
-```{r}
+```{r 86e1}
 phi <- 0.6
 theta <- 0.6
 y_arma <- ts(numeric(100))
 e <- rnorm(100)
-for(i in 2:100){
-  y_arma[i] <- phi * y_arma[i-1] + theta * e[i-1] + e[i]
+for (i in 2:100) {
+  y_arma[i] <- phi * y_arma[i - 1] + theta * e[i - 1] + e[i]
 }
 ```
 
 ### Part F
-Generate data from an AR(2) model with ϕ1 = −0.8, ϕ2 = 0.3 and σ2 = 1. (Note that these parameters will give a non-stationary series.)
+Generate data from an AR(2) model with \(\phi_1 = −0.8\), \(\phi_1 = 0.3\),
+and \(\sigma^2 = 1\). (Note that these parameters will give a non-stationary
+series.)
 
-```{r}
+```{r 86f1}
 phi1 <- -0.8
 phi2 <- 0.3
 y_ar <- ts(numeric(100))
 e <- rnorm(100)
 y_ar[2] <- y_ar[1] * phi1 + e[2]
-for(i in 3:100){
-  y_ar[i] <- phi1 * y_ar[i-1] + phi2 * y_ar[i-2] + e[i]
+for (i in 3:100) {
+  y_ar[i] <- phi1 * y_ar[i - 1] + phi2 * y_ar[i - 2] + e[i]
 }
 ```
 
 ### Part G
 Graph the latter two series and compare them.
 
-```{r}
+```{r 86g1}
 autoplot(y_arma) + xlab('ARMA Model')
 autoplot(y_ar) + xlab('AR 2 Model')
 ```
 
-The time series are extremely different as the AR 2 model is divergent. This is because The phi1 parameter makes the series oscillate, but the phi2 parameter has a positive sign and increases the size of the oscillations. Since phi1 and phi2 add to greater than 1, the oscillations diverge rather than converge.This leads to a time series with ever increasing amplitudes rather than the stationary time series we observe with the ARMA model.
+The time series are extremely different as the AR 2 model is divergent. This is
+because The \(\phi_1\) parameter makes the series oscillate, but the \(\phi_2\)
+parameter has a positive sign and increases the size of the oscillations. Since
+\(\phi_1\) and \(\phi_2\) add to greater than 1, the oscillations diverge rather
+than converge. This leads to a time series with ever increasing amplitudes
+rather than the stationary time series we observe with the ARMA model.
 
 # Question HA 8.8
 ## Question
 
-Consider austa, the total international visitors to Australia (in millions) for the period 1980-2015.
+Consider `austa`, the total international visitors to Australia (in millions)
+for the period 1980--2015.
 
 ### Part A
-Use auto.arima() to find an appropriate ARIMA model. What model was selected. Check that the residuals look like white noise. Plot forecasts for the next 10 periods.
+Use `auto.arima()` to find an appropriate ARIMA model. What model was selected.
+Check that the residuals look like white noise. Plot forecasts for the next 10
+periods.
 
-```{r}
+```{r 88a1}
 arima_model <- auto.arima(austa)
 arima_model
-
 ```
 
 Auto Arima has selected an ARIMA(0, 1, 1) with drift.
 
-```{r}
+```{r 88a2}
 checkresiduals(arima_model)
 autoplot(forecast(arima_model, h = 10))
 ```
 
-The residuals appear to be vaguely normally distributed and pass the Ljung Box test with a p-value of .8.
+The residuals appear to be vaguely normally distributed and pass the Ljung Box
+test with a p-value of .8.
 
 ### Part B
-Plot forecasts from an ARIMA(0,1,1) model with no drift and compare these to part a. Remove the MA term and plot again.
+Plot forecasts from an ARIMA(0,1,1) model with no drift and compare these to
+part a. Remove the MA term and plot again.
 
-```{r}
+```{r 88b1}
 arima_no_drift <- Arima(austa, c(0, 1, 1), include.drift = F)
 autoplot(forecast(arima_no_drift), h = 10)
 
@@ -558,25 +973,33 @@ arima_no_ma <- Arima(austa, c(0, 1, 0), include.drift = F)
 autoplot(forecast(arima_no_ma), h = 10)
 ```
 
-Both the forecasts without drift fail to capture the trending nature of the previous data, providing constant forecasts rather than upward trending forecasts. 
+Both the forecasts without drift fail to capture the trending nature of the
+previous data, providing constant forecasts rather than upward trending
+forecasts. 
 
 ### Part C
-Plot forecasts from an ARIMA(2,1,3) model with drift. Remove the constant and see what happens.
+Plot forecasts from an ARIMA(2,1,3) model with drift. Remove the constant and
+see what happens.
 
-```{r}
+```{r 88c1}
 fit <- Arima(austa, c(2, 1, 3), include.drift = T)
 autoplot(forecast(fit, h = 10))
 
-fit_no_c <- Arima(austa, c(2,1,3), include.drift = T, include.constant = F, method = 'ML')
+fit_no_c <- Arima(austa, c(2,1,3), include.drift = T, include.constant = F,
+                  method = 'ML')
 autoplot(forecast(fit_no_c, h = 10))
 ```
 
-The two models give somewhat similar forecasts, but the prediction interval for the model without a constant is much larger than the prediction interval for the model with a constant. The model with a constant also appears to be slightly damped compared to the model without a constant.
+The two models give somewhat similar forecasts, but the prediction interval for
+the model without a constant is much larger than the prediction interval for the
+model with a constant. The model with a constant also appears to be slightly
+damped compared to the model without a constant.
 
 ### Part D
-Plot forecasts from an ARIMA(0,0,1) model with a constant. Remove the MA term and plot again.
+Plot forecasts from an ARIMA(0,0,1) model with a constant. Remove the MA term
+and plot again.
 
-```{r}
+```{r 88d1}
 fit <- Arima(austa, c(0, 0, 1), include.constant = T)
 autoplot(forecast(fit, h = 10))
 
@@ -584,45 +1007,18 @@ fit_no_ma <- Arima(austa, c(0, 0, 0), include.constant = T)
 autoplot(forecast(fit_no_ma, h = 10))
 ```
 
-The model with the MA term regresses to the mean after 1 timestep, the length of the MA term. The model with no MA term simply forecasts the mean value for all future timesteps. Neither of these models seem appropriate as they fail to capture the trending nature of the data.
+The model with the MA term regresses to the mean after 1 timestep, the length of
+the MA term. The model with no MA term simply forecasts the mean value for all
+future timesteps. Neither of these models seem appropriate as they fail to
+capture the trending nature of the data.
 
 ### Part E
 Plot forecasts from an ARIMA(0,2,1) model with no constant.
 
-```{r}
+```{r 88e1}
 fit <- Arima(austa, c(0, 2, 1), include.constant = F)
 autoplot(forecast(fit, h = 10))
 ```
 
-This model appears to be a reasonable fit to the data, capturing the upward trend and without a huge prediction interval.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+This model appears to be a reasonable fit to the data, capturing the upward
+trend and without a huge prediction interval.
