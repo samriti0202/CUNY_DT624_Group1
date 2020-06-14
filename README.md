@@ -11,17 +11,19 @@ docx to Professor Burke
 
 ## Assignments
 ### HW Set 1: Due 6/20/2020
- 1. HA 2.1: Vishal Arora
- 1. HA 2.3: Vishal Arora
- 1. HA 6.2: Avraham Adler
- 1. KJ 3.1: Avraham Adler
- 1. KJ 3.2: Avraham Adler
- 1. HA 7.1: Austin Chan
- 1. HA 7.3: Austin Chan
- 1. HA 8.1:
- 1. HA 8.2: Sam Bellows
- 1. HA 8.6: Sam Bellows
- 1. HA 8.8: Sam Bellows
+|Problem|Student|Completed|
+|-------|-------|---------|
+|HA 2.1|Vishal Arora|:heavy_check_mark:|
+|HA 2.3|Vishal Arora|:heavy_check_mark:|
+|HA 6.2|Avraham Adler|:heavy_check_mark:|
+|KJ 3.1|Avraham Adler|:heavy_check_mark:|
+|KJ 3.2|Avraham Adler|:heavy_check_mark:|
+|HA 7.1|Austin Chan|:heavy_check_mark:|
+|HA 7.3|Austin Chan|:heavy_check_mark:|
+|HA 8.1|Vishal Arora| |
+|HA 8.2|Sam Bellows|:heavy_check_mark:|
+|HA 8.6|Sam Bellows|:heavy_check_mark:|
+|HA 8.8|Sam Bellows|:heavy_check_mark:|
  
 ### HW Set 2: Due 7/19/2020
  1. KJ 6.3:
