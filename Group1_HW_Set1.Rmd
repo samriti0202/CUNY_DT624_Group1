@@ -615,4 +615,33 @@ than 20, the value suggested by Kuhn & Johnson. These would be categories for
 consideration of removal or some other transform due to their imbalance.
 
 ### Part (b)
+There clearly is a correlation between the Class and the "missingness" of data.
+```{r QKJ32b1, fig.width = 9L, fig.height = 10L}
+numClass <- length(levels(Soybean$Class))
+nameClass <- levels(Soybean$Class)
+NAList <- data.frame(Class = character(0), NACount = integer(0))
+par(mfrow = c(5, 4))
+for (i in seq_len(numClass)) {
+  NAList[i, ] <- c(nameClass[i],
+                   sum(is.na(Soybean[Soybean$Class == nameClass[i], ])))
+  barplot(apply(Soybean[Soybean$Class == nameClass[i], ], 2L,
+                function(x) sum(is.na(x)) / length(x)),
+          xlab = nameClass[i])
+}
+par(mfrow = c(1, 1))
+NAList
+```
 
+It's clear that classes 1, 9, 10, 14, and 16 have significant missing values
+where the other 14 classes have none. As an aside, this kind of analysis would
+be done more easily using a package like `data.table` where operations could be
+done by group.
+```{r QKJ32b2}
+library(data.table)
+Sb <- as.data.table(Soybean)
+Sb[, .(NACount = sum(is.na(.SD))), keyby = Class]
+```
+
+Which gives us the same information as does base R but with less typing.
+
+### Part (c)
