@@ -367,10 +367,10 @@ The first visualization step is usually to plot the empirical distribution of
 each of the variables. Below are histograms and kernel density plots for each of
 the 10 variables. To make life a bit simpler, the factor `Type` will be
 converted to the eponynous integer. Also, since there will be a few calls to a
-set of scatterplots, a helper function `scatterbox` will be defined.
+set of scatterplots, a helper function `histbox` will be defined.
 ```{r Q31Hist, fig.width = 9L, fig.height = 10L}
 Glass$Type <- as.integer(levels(Glass$Type))[Glass$Type]
-scatterbox <- function(df, box, useLast = TRUE) {
+histbox <- function(df, box, useLast = TRUE) {
     par(mfrow = box)
     ndf <- dimnames(df)[[2]] # Thanks for nothing, scale!!
     if (!useLast) ndf <- ndf[-length(ndf)]
@@ -382,7 +382,7 @@ scatterbox <- function(df, box, useLast = TRUE) {
     }
     par(mfrow = c(1, 1))
 }
-scatterbox(Glass, c(4, 3))
+histbox(Glass, c(4, 3))
 ```
 
 The plots show that some of the variable such as Potassium (**K**), Barium
@@ -427,7 +427,7 @@ mean and divides by the standard deviation of each variable. This sets all means
 to 0 and puts the variability on the same scale. This which will obviously not
 be applied to the `Type` variable.
 ```{r Q31Scale, fig.width = 9L, fig.height = 8L}
-scatterbox(scale(Glass), box = c(3, 3), useLast = FALSE)
+histbox(scale(Glass), box = c(3, 3), useLast = FALSE)
 apply(scale(Glass), 2L, KJskew)
 ```
 
@@ -438,7 +438,7 @@ stands to reason, as centering and scaling do not materially address skew.
 A transformation often used to address skew in particular is to log the data.
 Again, this is inappropriate for the `Type` variable.
 ```{r Q31Log, fig.width = 9L, fig.height = 8L}
-scatterbox(log(Glass), box = c(3, 3), useLast = FALSE)
+histbox(log(Glass), box = c(3, 3), useLast = FALSE)
 apply(log(Glass), 2L, KJskew)
 ```
 
@@ -474,7 +474,7 @@ bxcx <- function(x, l) {
         (x ^ l - 1) / l
     }
 }
-scatterbox(bxcx(Glass, 0.4), box = c(3, 3), useLast = FALSE)
+histbox(bxcx(Glass, 0.4), box = c(3, 3), useLast = FALSE)
 apply(bxcx(Glass, 0.4), 2L, KJskew)
 ```
 
@@ -546,3 +546,73 @@ the results visualized as well. Further areas for investigation would include
 dimensional reduction techniques, especiallt PCA, which should help to reduce
 the feature set from 10 to something more manageable which still captures the
 predominance of the variability in the data.
+
+# Question KJ 3.2
+## Question
+The soybean data can also be found at the UC Irvine Machine Learning Repository.
+Data were collected to predict disease in 683 soybeans. The 35 predictors are
+mostly categorical and include information on the environmental conditions
+(e.g., temperature, precipitation) and plant conditions (e.g., left spots,
+mold growth). The outcome labels consist of 19 distinct classes. The data can be
+loaded via:
+```{r QKJ32q}
+library(mlbench)
+data(Soybean)
+## See ?Soybean for details
+```
+
+  (a) Investigate the frequency distributions for the categorical predictors.
+  Are any of the distributions degenerate in the ways discussed earlier in this
+  chapter?
+  (b) Roughly 18\% of the data are missing. Are there particular predictors that
+  are more likely to be missing? Is the pattern of missing data related to the
+  classes?
+  (c) Develop a strategy for handling missing data, either by eliminating
+  predictors or imputation.
+
+## Answer
+### Part (a)
+```{r QKJ32barbox}
+barbox <- function(df, box) {
+    par(mfrow = box)
+    ndf <- dimnames(df)[[2]] # Thanks for nothing, scale!!
+    for (i in seq_along(ndf)) {
+        data <- unlist(df[, i])
+        plot(data, main = paste("PseudoHistogram of", ndf[i]), xlab = ndf[i])
+    }
+    par(mfrow = c(1, 1))
+}
+```
+
+The frequency of the categorical is shown below, both visually and tabularly:
+```{r QKJ32a1, fig.width = 9L, fig.height = 10L}
+for (i in seq_len(3)) {
+  barbox(Soybean[, seq_len(12) * i], c(4, 3))
+}
+apply(Soybean, 2, function(x) length(unique(x)))
+```
+
+From the above, we see that there is no mathematically degenerate distribution,
+in that every catgeory has at least one instance of more than one variable type.
+Furthermore, the number of unique values being small in respect of the number of
+samples is not a significant issue, as most of these are dummy/indicator
+variables for the categories. The key test will be the ratio of most frequent to
+the second most frequent observation in each category.
+```{r QKJ32a2}
+nS <- names(Soybean)
+soyRatios <- data.frame(Variable = character(36), Ratio = double(36))
+for (i in seq_len(dim(Soybean)[[2]])) {
+  soyRatios[i, 1] <- nS[i]
+  soyRatios[i, 2] <- max(table(Soybean[, i])) /
+    max(table(Soybean[, i])[-which.max(table(Soybean[, i]))])
+}
+soyRatios[order(soyRatios$Ratio, decreasing = TRUE), ]
+soyRatios[which(soyRatios$Ratio > 20), ]
+```
+
+Here we see three categories which have a most-to-second most ratio of greater
+than 20, the value suggested by Kuhn & Johnson. These would be categories for
+consideration of removal or some other transform due to their imbalance.
+
+### Part (b)
+
