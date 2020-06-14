@@ -633,9 +633,10 @@ NAList
 ```
 
 It's clear that classes 1, 9, 10, 14, and 16 have significant missing values
-where the other 14 classes have none. As an aside, this kind of analysis would
-be done more easily using a package like `data.table` where operations could be
-done by group.
+where the other 14 classes have none. Note that the values are not the counts
+of records with missing values, but are indications of many missing values per
+record. As an aside, this kind of analysis would be done more easily using a
+package like `data.table` where operations could be done by group.
 ```{r QKJ32b2}
 library(data.table)
 Sb <- as.data.table(Soybean)
@@ -645,6 +646,16 @@ Sb[, .(NACount = sum(is.na(.SD))), keyby = Class]
 Which gives us the same information as does base R but with less typing.
 
 ### Part (c)
+Using `data.table` we can more easily get a better picture of the number of
+missing values and consider approaches to handling them. First, a breakout of
+counts by class and then a list of missing data by variable for the classes with
+missing data.
+```{r QKJ32b3}
+Sb[, .(Count = .N), keyby = Class]
+Sb[Class %in% levels(Sb$Class)[c(1, 9, 10, 14, 16)],
+   lapply(.SD, function(x) sum(is.na(x))), by = Class]
+```
+
 
 # Question HA 8.2
 ## Question
