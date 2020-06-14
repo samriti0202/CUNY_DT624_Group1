@@ -12,7 +12,7 @@ docx to Professor Burke
 ## Assignments
 ### HW Set 1: Due 6/20/2020
 |Problem|Student|Completed|
-|-------|-------|---------|
+|-------|-------|:-------:|
 |HA 2.1|Vishal Arora|:heavy_check_mark:|
 |HA 2.3|Vishal Arora|:heavy_check_mark:|
 |HA 6.2|Avraham Adler|:heavy_check_mark:|
@@ -24,15 +24,22 @@ docx to Professor Burke
 |HA 8.2|Sam Bellows|:heavy_check_mark:|
 |HA 8.6|Sam Bellows|:heavy_check_mark:|
 |HA 8.8|Sam Bellows|:heavy_check_mark:|
+Submitted: :x:
  
 ### HW Set 2: Due 7/19/2020
- 1. KJ 6.3:
- 1. KJ 7.2:
- 1. KJ 7.5:
- 1. KJ 8.1:
- 1. KJ 8.2:
- 1. KJ 8.3:
- 1. KJ 8.7:
+|Problem|Student|Completed|
+|-------|-------|:-------:|
+|KJ 6.3 | | |
+|KJ 7.2 | | |
+|KJ 7.5 | | |
+|KJ 8.1 | | |
+|KJ 8.2 | | |
+|KJ 8.3 | | |
+|KJ 8.7 | | |
+Submitted: :x:
  
 ### Project 1: Due 6/27/2020
+Submitted: :x:
+
 ### Project 2: Due 7/19/2020
+Submitted: :x:
