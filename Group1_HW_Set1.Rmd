@@ -1,9 +1,12 @@
 ---
 title: "CUNY DT 624---Summer 2020"
-subtitle: "Homework Set 1"
-author: "Group 1: Avraham Adler, Vishal Arora, Gabrielle Bartomeo, Samuel Bellows, Austin Chan"
+author: 'Group 1: Avraham Adler, Vishal Arora, Gabrielle Bartomeo, Samuel Bellows,
+  Austin Chan'
 date: "Summer 2020"
-output: word_document
+output:
+  html_document:
+    df_print: paged
+subtitle: Homework Set 1
 ---
 
 ```{r setup, include=FALSE}
@@ -322,6 +325,90 @@ average. In this case, interestingly, one of the known shortcomings of
 classical decomposition---its inability to process the ends of the time
 series---here becomes valuable!
 
+# Question HA 7.1
+
+Consider the `pigs` series -- the number of pigs slaughtered in Victoria each month.
+
+## Answers
+
+### Part a
+
+Use the `ses()` function in R to find the optimal values of alpha and l, and generate forecastss for the next four months.
+
+```{r Q71a_1}
+pigs_output = ses(pigs, h = 4)
+
+summary(pigs_output$model)
+```
+
+After running the `ses()` function on the `pigs` data, we can see that the optimal value for alpha is 0.2971 and the optimal value for l is 77260.0561.
+
+The forecast for the next four months is shown below:
+
+```{r Q71a_2}
+pigs_output
+```
+
+### Part b
+
+Compute a 95% prediction interval for the first forecast using predicted value +/- 1.96 * s, where s is the standard deviation of the residuals. Compare you interval with the interval produced by R.
+
+```{r Q71b_1}
+pigs_sd_resid = sd(pigs_output$residuals)
+
+pigs_lb = pigs_output$mean - (1.96 * pigs_sd_resid)
+pigs_ub = pigs_output$mean + (1.96 * pigs_sd_resid)
+
+pigs_lb
+pigs_ub
+```
+
+The interval that I created does not get wider as time increases, whereas the interval produced by R gradually gets wider as time increases. Using the basic confidence interval calculation with a simple point forecast that does not adjust for increasing uncertainty as time increases creates this static rectangle forecast. The output from R appears to adjust for this uncertainty.
+
+# Question HA 7.3
+
+Modify your function from the previous exercise t o return the sum of squared errors rather than the forecast of the next observation. Then use the `optim()` function to find the optimal values of alpha and l. Do you get the same values as the `ses()` function?
+
+## Answers
+
+The function below calculates the SSE from a simple exponential smoothing model after inputing a specific alpha, level, and time series. The function takes the compnent form of the smoothing equation of the SES model and uses it to calculate the SSE.
+
+```{r Q73_1}
+my_ses = function(y,pars = c(alpha,level)){
+  
+  alpha = pars[1]
+  level = pars[2]
+  
+  l_t = vector(mode = "numeric",length = length(y) + 1)
+  l_t[1] = level
+  
+  for(item in seq(2,length(y) + 1)){
+    
+      l_t[item] = (alpha * y[item - 1]) + ((1 - alpha) * l_t[item - 1])
+    
+  }
+  
+  
+  SSE = sum((y - l_t[1:length(l_t) - 1]) ^ 2)
+  
+  
+  return(SSE)
+}
+
+
+my_ses(pigs,c(0.2971,77260.0561))
+```
+
+The code below finds the optimal values of alpha and level using the `optim()` function. We can see that the values for alpha and level are nearly identical to the same parameters calculated using the `ses()` function.
+
+```{r Q73_2}
+optimal_values = optim(par = c(0.5, pigs[1]), y = pigs, fn = my_ses)
+
+optimal_values$par[1]
+optimal_values$par[2]
+```
+
+
 # Question HA 8.2
 ## Question
 
@@ -508,3 +595,34 @@ autoplot(forecast(fit, h = 10))
 ```
 
 This model appears to be a reasonable fit to the data, capturing the upward trend and without a huge prediction interval.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
