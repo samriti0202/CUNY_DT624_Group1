@@ -664,7 +664,7 @@ When a variable is missing, it tends to be missing for the entirety of its
 class, as shown below:
 
 ```{r QKJ32c2}
-SbM[, sum(.SD > 0) / length(.SD), keyby = Class]
+SbM[, lapply(.SD, function(x) sum(is.na(x)) / length(x)), keyby = Class]
 ```
 
 Lastly, of the 35 explanatory variables (not counting class itself), these
