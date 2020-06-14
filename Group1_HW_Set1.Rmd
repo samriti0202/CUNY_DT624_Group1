@@ -1,7 +1,7 @@
 ---
 title: "CUNY DT 624---Summer 2020"
 subtitle: "Homework Set 1"
-author: "Group 1: Avraham Adler, Vishal Arora, Gabrielle Bartomeo, Samuel Bellows, Austin Chan"
+author: "Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan"
 date: "Summer 2020"
 output: word_document
 ---
