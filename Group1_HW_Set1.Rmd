@@ -650,35 +650,71 @@ Which gives us the same information as does base R but with less typing.
 
 ### Part (c)
 Using `data.table` we can more easily get a better picture of the number of
-missing values and consider approaches to handling them. First, a breakout of
-counts by class and then a list of missing data by variable for the classes with
+missing values and consider approaches to handling them. First, a list of the
+toal number of records for classes with missing data and then the distribution
+of the missing data by variable.
 missing data.
-```{r QKJ32b3}
-Sb[, .(Count = .N), keyby = Class]
-Sb[Class %in% levels(Sb$Class)[c(1, 9, 10, 14, 16)],
-   lapply(.SD, function(x) sum(is.na(x))), by = Class]
+```{r QKJ32c1}
+SbM <- Sb[Class %in% levels(Sb$Class)[c(1, 9, 10, 14, 16)]]
+SbM[, .N, keyby = Class]
+SbM[, lapply(.SD, function(x) sum(is.na(x))), keyby = Class]
 ```
 
+When a variable is missing, it tends to be missing for the entirety of its
+class, as shown below:
+
+```{r QKJ32c2}
+SbM[, sum(.SD > 0) / length(.SD), keyby = Class]
+```
+
+Lastly, of the 35 explanatory variables (not counting class itself), these
+missing classes tend to be missing a lot of them
+
+```{r QKJ32c3}
+SbM[, lapply(.SD, function(x) sum(is.na(x))), keyby = Class
+    ][, .(VarMissing = sum(.SD > 0) / length(.SD)), keyby = Class
+      ][order(-VarMissing)]
+```
+
+All the classes with missing data are missing more than 50\% of their data with
+the exception of the `diaporthe-pod-&-stem-blight` class. As such, unless we
+were using tree-based methods, I would suggest that the data observations of the
+first four classes which are missing be removed, as I would be loathe to impute
+more than half of the data points for that class. Especially if there will
+eventually be training-validation-testing splits.
+
+As for `diaporthe-pod-&-stem-blight`, on the one hand, there are only 15
+observations in the entire data set. On the other, it has around 2/3 of the
+features. A first strategy would be to see just how predictive the missing
+features are in the remaining data; perhaps they aren't of much value.
+Otherwise, I would have to weigh the time constraints of the project against the
+time needed to impute the 15 sets of 11 and 2 more sets of 6 missing data
+elements, and how much predictive power they will end up demonstrating.
+
+Lastly, using a dimensional reduction approach, such as PCA, on the non-missing
+data may be informative in that the variability reduction of a missing variable
+may be correlated enough with a non-missing variable to allow a focused model to
+be of value.
 
 # Question HA 8.2
 ## Question
 
 A classic example of a non-stationary series is the daily closing IBM stock price series (data set ibmclose). Use R to plot the daily closing prices for IBM stock and the ACF and PACF. Explain how each plot shows that the series is non-stationary and should be differenced.
 
-```{r}
+```{r 82Q1}
 ibm <- ibmclose
 autoplot(ibm)
 ```
 
 The timeseries appears to have some trend component, which would make the data non-stationary. Taking either the first or second difference should remove this trend and make the data stationary.
 
-```{r}
+```{r 82Q2}
 ggAcf(ibm)
 ```
 
 Here we see an autocorrelation plot that agrees with our above assumptions; the decaying values are a clear sign of trend, and every possible lag has a significant autocorrelation, indicating non-stationary data.
 
-```{r}
+```{r 82Q3}
 ggPacf(ibm)
 ```
 
@@ -692,7 +728,7 @@ Use R to simulate and plot some data from simple ARIMA models.
 ### Part A
 Use the following R code to generate data from an AR(1) model with  ϕ1 = 0.6 and σ2 = 1. The process starts with y1 = 0.
 
-```{r}
+```{r 86a1}
 y <- ts(numeric(100))
 e <- rnorm(100)
 for(i in 2:100)
@@ -702,7 +738,7 @@ for(i in 2:100)
 ### Part B
 Produce a time plot for the series. How does the plot change as you change ϕ1?
 
-```{r}
+```{r 86b1}
 for(i in c(-0.8, -0.6, -0.4, -0.2, 0.2, 0.4, 0.6, 0.8)){
     y <- ts(numeric(100))
     e <- rnorm(100)
@@ -719,7 +755,7 @@ The value chosen for phi affects how volatile the series is. Negative values clo
 ### Part C
 Write your own code to generate data from an MA(1) model with θ1 = 0.6 and σ2 = 1.
 
-```{r}
+```{r 86c1}
 set.seed(42)
 for (theta in c(-1, -0.6, -0.3, 0, 0.3, 0.6, 1)){
   y <- ts(numeric(100))
@@ -740,7 +776,7 @@ As theta approaches 1, the time series appears to resemble a random walk. Howeve
 Generate data from an ARMA(1,1) model with ϕ1 = 0.6, 
 θ1 = 0.6 and σ2 = 1.
 
-```{r}
+```{r 86e1}
 phi <- 0.6
 theta <- 0.6
 y_arma <- ts(numeric(100))
@@ -753,7 +789,7 @@ for(i in 2:100){
 ### Part F
 Generate data from an AR(2) model with ϕ1 = −0.8, ϕ2 = 0.3 and σ2 = 1. (Note that these parameters will give a non-stationary series.)
 
-```{r}
+```{r 86f1}
 phi1 <- -0.8
 phi2 <- 0.3
 y_ar <- ts(numeric(100))
@@ -767,7 +803,7 @@ for(i in 3:100){
 ### Part G
 Graph the latter two series and compare them.
 
-```{r}
+```{r 86g1}
 autoplot(y_arma) + xlab('ARMA Model')
 autoplot(y_ar) + xlab('AR 2 Model')
 ```
@@ -782,7 +818,7 @@ Consider austa, the total international visitors to Australia (in millions) for 
 ### Part A
 Use auto.arima() to find an appropriate ARIMA model. What model was selected. Check that the residuals look like white noise. Plot forecasts for the next 10 periods.
 
-```{r}
+```{r 88a1}
 arima_model <- auto.arima(austa)
 arima_model
 
@@ -790,7 +826,7 @@ arima_model
 
 Auto Arima has selected an ARIMA(0, 1, 1) with drift.
 
-```{r}
+```{r 88a2}
 checkresiduals(arima_model)
 autoplot(forecast(arima_model, h = 10))
 ```
@@ -800,7 +836,7 @@ The residuals appear to be vaguely normally distributed and pass the Ljung Box t
 ### Part B
 Plot forecasts from an ARIMA(0,1,1) model with no drift and compare these to part a. Remove the MA term and plot again.
 
-```{r}
+```{r 88b1}
 arima_no_drift <- Arima(austa, c(0, 1, 1), include.drift = F)
 autoplot(forecast(arima_no_drift), h = 10)
 
@@ -814,7 +850,7 @@ Both the forecasts without drift fail to capture the trending nature of the prev
 ### Part C
 Plot forecasts from an ARIMA(2,1,3) model with drift. Remove the constant and see what happens.
 
-```{r}
+```{r 88c1}
 fit <- Arima(austa, c(2, 1, 3), include.drift = T)
 autoplot(forecast(fit, h = 10))
 
@@ -827,7 +863,7 @@ The two models give somewhat similar forecasts, but the prediction interval for 
 ### Part D
 Plot forecasts from an ARIMA(0,0,1) model with a constant. Remove the MA term and plot again.
 
-```{r}
+```{r 88d1}
 fit <- Arima(austa, c(0, 0, 1), include.constant = T)
 autoplot(forecast(fit, h = 10))
 
@@ -840,7 +876,7 @@ The model with the MA term regresses to the mean after 1 timestep, the length of
 ### Part E
 Plot forecasts from an ARIMA(0,2,1) model with no constant.
 
-```{r}
+```{r 88e1}
 fit <- Arima(austa, c(0, 2, 1), include.constant = F)
 autoplot(forecast(fit, h = 10))
 ```
