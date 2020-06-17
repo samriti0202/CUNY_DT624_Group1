@@ -601,7 +601,7 @@ Furthermore, the number of unique values being small in respect of the number of
 samples is not a significant issue, as most of these are dummy/indicator
 variables for the categories. The key test will be the ratio of most frequent to
 the second most frequent observation in each category.
-```{r QKJ32a2}
+```{r QKJ32a2, warning = F}
 nS <- names(Soybean)
 soyRatios <- data.frame(Variable = character(36), Ratio = double(36))
 for (i in seq_len(dim(Soybean)[[2]])) {
@@ -619,7 +619,7 @@ consideration of removal or some other transform due to their imbalance.
 
 ### Part (b)
 There clearly is a correlation between the Class and the "missingness" of data.
-```{r QKJ32b1, fig.width = 9L, fig.height = 10L}
+```{r QKJ32b1, fig.width = 9L, fig.height = 10L, warning = F}
 numClass <- length(levels(Soybean$Class))
 nameClass <- levels(Soybean$Class)
 NAList <- data.frame(Class = character(0), NACount = integer(0))
@@ -651,7 +651,7 @@ Which gives us the same information as does base R but with less typing.
 ### Part (c)
 Using `data.table` we can more easily get a better picture of the number of
 missing values and consider approaches to handling them. First, a list of the
-toal number of records for classes with missing data and then the distribution
+total number of records for classes with missing data and then the distribution
 of the missing data by variable.
 missing data.
 ```{r QKJ32c1}
@@ -706,7 +706,7 @@ month.
 ### Part a
 
 Use the `ses()` function in R to find the optimal values of alpha and l, and
-generate forecastss for the next four months.
+generate forecasts for the next four months.
 
 ```{r Q71a_1}
 pigs_output = ses(pigs, h = 4)
