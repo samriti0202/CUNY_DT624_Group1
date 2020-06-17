@@ -795,6 +795,33 @@ optimal_values = optim(par = c(0.5, pigs[1]), y = pigs, fn = my_ses)
 optimal_values$par[1]
 optimal_values$par[2]
 ```
+# Question HA 8.1
+## Question
+Figure 8.31 shows the ACFs for 36 random numbers, 360 random numbers and 
+1,000 random numbers.
+
+### Part A
+Explain the differences among these figures. Do they all indicate that the data 
+are white noise?
+
+![Fig 8.31 ACF for a white noise series of 36 numbers. Middle: ACF for a white noise
+series of 360 numbers. Right: ACF for a white noise series of 1,000 numbers.](wnacfplus-1.png)
+
+**Ans* :- Data in all the 3 figures resemble white noise.The difference between all 
+these figures is the critical values for each dataset, as the dataset is small the
+critical values are larger and as the dataset increases the critical values are smaller.
+
+### Part B
+Why are the critical values at different distances from the mean of zero? Why are the 
+autocorrelations different in each figure when they each refer to white noise?
+
+**Ans* :- Critical values are at different distances from the mean of zero , because
+the formula to calculate critical values is $$\pm 2/\sqrt { N }$$ where N=length of TS.
+Hence as the length of TS increases or decreases the critical values come closer or move
+further away from mean of zero.                          
+The autocorrelations are different in each figure because of the different length of each 
+timeseries.
+
 
 # Question HA 8.2
 ## Question
