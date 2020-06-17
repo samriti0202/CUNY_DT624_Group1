@@ -809,7 +809,7 @@ are white noise?
 ![Fig 8.31 ACF for a white noise series of 36 numbers. Middle: ACF for a white noise
 series of 360 numbers. Right: ACF for a white noise series of 1,000 numbers.](wnacfplus-1.png)
 
-**Ans* :- Data in all the 3 figures resemble white noise.The difference between all 
+**Ans** :- Data in all the 3 figures resemble white noise.The difference between all 
 these figures is the critical values for each dataset, as the dataset is small the
 critical values are larger and as the dataset increases the critical values are smaller.
 
@@ -817,7 +817,7 @@ critical values are larger and as the dataset increases the critical values are 
 Why are the critical values at different distances from the mean of zero? Why are the 
 autocorrelations different in each figure when they each refer to white noise?
 
-**Ans* :- Critical values are at different distances from the mean of zero , because
+**Ans** :- Critical values are at different distances from the mean of zero , because
 the formula to calculate critical values is $$\pm 2/\sqrt { N }$$ where N=length of TS.
 Hence as the length of TS increases or decreases the critical values come closer or move
 further away from mean of zero.                          
