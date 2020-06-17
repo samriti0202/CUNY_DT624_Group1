@@ -265,6 +265,7 @@ While graphical output will wait until part d, below are \(\hat{S}_n,
 ```{r 62b_7}
 Sn
 Tn
+Rn
 ```
 
 ### Part c.
@@ -449,7 +450,8 @@ Now, some of the distributions begin to look more symmetrical, which should put
 us in mind of the *lognormal* distribution. Magnesium, however, becomes
 heavily **left**-tailed. This phenomenon is often seen in *gamma* distributed
 variables and is very clear in *beta* distributed random variables where both
-shape parameters are near 0.5. This fits very nicely with our observation above.
+shape parameters are nearly equal. This fits very nicely with our observation
+above.
 
 Note that many of the variables had observations of 0, which returns `-Inf` when
 logged. This is the reasons for the `Nan`s in the skew calculations. This also
