@@ -20,7 +20,7 @@ docx to Professor Burke
 |KJ 3.2|Avraham Adler|:heavy_check_mark:|
 |HA 7.1|Austin Chan|:heavy_check_mark:|
 |HA 7.3|Austin Chan|:heavy_check_mark:|
-|HA 8.1|Vishal Arora| |
+|HA 8.1|Vishal Arora|:heavy_check_mark:|
 |HA 8.2|Sam Bellows|:heavy_check_mark:|
 |HA 8.6|Sam Bellows|:heavy_check_mark:|
 |HA 8.8|Sam Bellows|:heavy_check_mark:|
