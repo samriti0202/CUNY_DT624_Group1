@@ -24,7 +24,7 @@ docx to Professor Burke
 |HA 8.2|Sam Bellows|:heavy_check_mark:|
 |HA 8.6|Sam Bellows|:heavy_check_mark:|
 |HA 8.8|Sam Bellows|:heavy_check_mark:|
-Submitted: :x:
+Submitted: :heavy_check_mark:
  
 ### HW Set 2: Due 7/19/2020
 |Problem|Student|Completed|
