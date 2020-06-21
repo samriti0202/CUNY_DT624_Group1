@@ -1,0 +1,53 @@
+---
+title: "CUNY DT 624"
+subtitle: "Project 1"
+author: "Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan"
+date: "Summer 2020"
+output:
+  word_document:
+    toc: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(data.table)
+```
+
+# Introduction
+The purpose of this report is to describe the analysis performed in order to
+forecast the following series, each for 140 periods.
+
+ * S01: Forecast Var01 and Var02
+ * S02: Forecast Var02 and Var03
+ * S03: Forecast Var05 and Var07
+ * S04: Forecast Var01 and Var02
+ * S05: Forecast Var02 and Var03
+ * S06: Forecast Var05 and Var07
+ 
+The forecasts will be provided in a seperate Excel document. The code for the
+analysis can be found in the attached R markdown document.
+
+# Executive Summary
+
+# Analysis
+## Data Preprocessing
+The data was converted to CSV, read into R, and then split into seperate files
+by group.
+```{r datapreprocess, include=FALSE}
+# Read in Data
+DT <- read_xls('./project1data/Data Set for class.xls')
+# Set as data table
+setDT(DT)
+# Seperate out groups
+n <- length(unique(DT$group))
+for (i in seq_len(n)) {
+  gName <- paste0('S0', i)
+  assign(gName, DT[group == gName])
+}
+```
+
+## Data Investigation
+Each of the seperate series was investigated for correlation, autocorrelation,
+and stationarity.
