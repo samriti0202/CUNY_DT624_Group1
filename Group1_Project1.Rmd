@@ -12,6 +12,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
+library(fpp2)
 library(data.table)
 ```
 
@@ -88,6 +89,14 @@ variance is significantly less.
 One also sees that clearly V1 and V2 are negatively correlated with each other,
 as V1 has an increasing secular trend whereas V2 has an overall decreasing one.
 
+Initially, both multiplicative and additive time series were investigated.
+
 
 # Technical Appendix
+The `R` language was used for this analysis. The reader of the appendix is
+assumed to have some basic statistical and programming experience.
+## Series 01
+### Classical Decomposition
+#### Additive
+
 
