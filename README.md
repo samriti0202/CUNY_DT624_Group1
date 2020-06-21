@@ -25,6 +25,20 @@ docx to Professor Burke
 |HA 8.6|Sam Bellows|:heavy_check_mark:|
 |HA 8.8|Sam Bellows|:heavy_check_mark:|
 Submitted: :heavy_check_mark:
+
+### Project 1: Due 6/27/2020
+|Task|Student|Completed|
+|----|-------|:-------:|
+|S01|Avraham Adler||
+|S02|||
+|S03|||
+|S04|||
+|S05|||
+|S06|||
+|Compilation|Group||
+|Summary|Group||
+
+Submitted: :x:
  
 ### HW Set 2: Due 7/19/2020
 |Problem|Student|Completed|
@@ -38,8 +52,7 @@ Submitted: :heavy_check_mark:
 |KJ 8.7 | | |
 Submitted: :x:
  
-### Project 1: Due 6/27/2020
-Submitted: :x:
+
 
 ### Project 2: Due 7/19/2020
 Submitted: :x:
