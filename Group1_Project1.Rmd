@@ -6,13 +6,31 @@ date: "Summer 2020"
 output:
   word_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(readxl)
+library(fpp2)
+library(urca)
+library(ggplot2)
+library(scales)
 library(data.table)
+
+# Read in Data
+DT <- read_xls('./project1data/Data Set for class.xls')
+# Set as data table
+setDT(DT)
+# Seperate out groups
+n <- length(unique(DT$group))
+for (i in seq_len(n)) {
+  gName <- paste0('S0', i)
+  assign(gName, DT[group == gName])
+}
+
+# Following is useful to quickly remove "future" periods from groups
+futureobs <- 1623:1762
 ```
 
 # Introduction
@@ -29,38 +47,368 @@ forecast the following series, each for 140 periods.
 The forecasts will be provided in a separate Excel document. The code for the
 analysis can be found in the attached R markdown document.
 
-# Executive Summary
+The **executive summmary** will contain the key findings. The more detailed
+analysis may be found in the **analyitical appendix** for those interested in
+the findings and decisions applied.
 
-# Analysis
-## Data Preprocessing
-The data was converted to CSV, read into R, and then split into seperate files
-by group.
-```{r datapreprocess, include=FALSE}
-# Read in Data
-DT <- read_xls('./project1data/Data Set for class.xls')
-# Set as data table
-setDT(DT)
-# Seperate out groups
-n <- length(unique(DT$group))
-for (i in seq_len(n)) {
-  gName <- paste0('S0', i)
-  assign(gName, DT[group == gName])
-}
+# Executive Summary
+## Series 01
+### Observations
+Variables 01 and 02 (V1 & V2 from now on) of Series 01 (S1 from now on) can each
+be considered a time series. As few transformations as possible will be applied
+to the data to maximize fidelity to the original source.
+```{r S1ts, echo=FALSE}
+S1ts <- ts(S01[-futureobs, 3:4])
+plot(S1ts)
 ```
 
-## Data Investigation
+Clearly V1 and V2 are negatively correlated with each other, as V1 has an
+increasing secular trend whereas V2 has an overall decreasing one. This is even
+more apparent when they are plotted after center-scaling and normalization.
+```{r S1scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
+V1 <- scale(S01$Var01[-futureobs])
+V2 <- scale(S01$Var02[-futureobs])
+plot(V2, type = 'l', col = 'green4', main = "Series 01 Variables",
+     xlab = "Time", ylab = "Scaled Values", ylim = c(-2, 8))
+lines(V1, col = 'blue')
+legend('topright', legend = c('V1', 'V2'), col = c('blue', 'green4'), lty = 1L)
+```
+```{r ARIMACalcs, include=FALSE}
+S1V1 <- na.interp(S1ts[, 1])
+S1V2 <- S1ts[, 2]
+V1O <- tsoutliers(S1V1)
+V2O <- tsoutliers(S1V2)
+S1V2c <- tsclean(S1V2)
+AAV1 <- auto.arima(S1V1, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+AAV2 <- auto.arima(S1V2, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+V1p <- AAV1$arma[[1]]
+V1q <- AAV1$arma[[2]]
+V1d <- AAV1$arma[[5]]
+V2p <- AAV2$arma[[1]]
+V2q <- AAV2$arma[[2]]
+V2d <- AAV2$arma[[5]]
+AAV1b <- auto.arima(S1V1, max.order = 6L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+AAV2b <- auto.arima(S1V2, max.order = 6L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+V1bp <- AAV1b$arma[[1]]
+V1bq <- AAV1b$arma[[2]]
+V1bd <- AAV1b$arma[[5]]
+V2bp <- AAV2b$arma[[1]]
+V2bq <- AAV2b$arma[[2]]
+V2bd <- AAV2b$arma[[5]]
+
+AAV2c <- auto.arima(S1V2c, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+V2cp <- AAV2c$arma[[1]]
+V2cq <- AAV2c$arma[[2]]
+V2cd <- AAV2c$arma[[5]]
+AAV2d <- auto.arima(S1V2, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE, lambda = 'auto')
+V2dp <- AAV2d$arma[[1]]
+V2dq <- AAV2d$arma[[2]]
+V2dd <- AAV2d$arma[[5]]
+```
+
+### Stationarity
+Both variables, as they stand are non-stationary. Statistical tests indicate
+that a difference of lag 1 is sufficient to induce stationarity.
+
+### Seasonality
+Once differenced, neither variable exhibits seasonality.
+
+### Missing Data
+With no apparent seasonality, the missing 2 variables for out of 1662 values for
+V1 were imputed by linear interpolation. There are no missing values for V2.
+
+### Transformations
+After much analsyis, V1 was modeled with neither outlier replacement nor
+transform and V2 was modeled without explicit outlier replacement but with a
+Box-Cox transform to reduce variability.
+
+### ARIMA parameters
+The selected model for V1 is an ARIMA(`r V1bp`, `r V1bd`, `r V1bq`) for 1 and
+for V2 it is an ARIMA(`r V2p`, `r V2d`, `r V2q`) with a Box-Cox \(lambda\) of
+`r AAV2d$lambda[[1]]`
+
+### Forecasts
+The mean forcast values will be supplied in the attached Excel workbook. The
+mean forecasts with error bands are plotted below
+```{r V1plot, echo=FALSE}
+plot(forecast(AAV1b, h = 140), main = "Forecast for V1")
+plot(forecast(AAV2d, h = 140, biasadj = TRUE), main = "Forecast for V2")
+```
+
+# Analytical Appendix
+## Data Preprocessing
+The data was converted to CSV, read into R, and then split into separate files
+by group.
+
 Each of the separate series was investigated for correlation, autocorrelation,
 and stationarity. For each data series, the last 140 periods are those needing
 the forecast. The first 1622 periods are the data.
 
-### Missing Data
 There are missing data elements in the series. Excluding the last 140 entries,
 the respective series are missing the following data elements:
 ```{r missingData, echo=FALSE}
-DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
-   .SDcols = c(3:7), keyby = group]
-# Following is useful to quickly remove "future" periods from groups
-futureobs <- 1623:1762
+knitr::kable(DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
+   .SDcols = c(3:7), keyby = group])
 ```
 
 These will be addressed in the individual series discussions.
+
+
+## Series 01
+### Variable 01
+#### Missing Data
+With no apparent seasonality, the missing 2 variables for out of 1662 values for
+V1 were replaced by linear interpolation.
+
+#### Outliers
+For V1, five points were identified as outliers using the `tsoutliers` function
+in the `forecast` package.
+```{r, S1V1Out}
+plot(S1V1, main = "Outliers for V1", ylab = "V1")
+points(V1O$index, V1O$replacements, col = 'red', pch = 16L)
+points(V1O$index, S1V1[V1O$index], col = 'blue', pch = 16L)
+legend('topleft', c("Outlier", "Replacement"), pch = 16L,
+       col = c('blue', 'red'))
+```
+
+As seen in the plot above, the blue points are the actual values and the maroon
+points are the suggested replacements. The outliers and their replacements are
+not deemed different enought to substitute interpolated data for real.
+
+#### Stationarity
+It is clear that there is non-stationarity in V1 when looking at autocorrelation
+plots.
+
+```{r S1V1acf, echo=FALSE, fig.width=10L}
+ggAcf(S1V1, type = 'correlation') + ggtitle("V1 Autocorrelation")
+```
+
+The autocorrelation plot shows slowly decreasing but continually positive
+values, a clear sign of the existence of non-stationarity. Using the
+*Kwiatkowski-Phillips-Schmidt-Shin* test as suggested by the text implies that a
+difference of one lag will be sufficient, as the test statistic falls below the
+critical values for any sane level of confidence after
+a difference of one lag.
+
+```{r S1V1station, echo=TRUE}
+summary(ur.kpss(S1V1))
+summary(ur.kpss(diff(S1V1)))
+```
+
+#### Seasonality
+Once differenced, there is no apparent seasonality at any reasonable lag value.
+```{r S1V1lagplots, echo=FALSE, fig.width=10L}
+gglagplot(diff(S1V1), set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 1")
+```
+
+#### ARIMA parameters
+Below are auto and partial autocorrelation plots for of the differenced values
+of V1.
+```{r S1V1aP, echo=FALSE, fig.width=10L}
+ggtsdisplay(diff(S1V1))
+```
+
+The positive ACF lag 1 with cutoff after lag 2 implies that V1 will require a MA
+component of at least 2. It's more difficult to immediately identify an AR
+componenent, so an exhaustive search using `auto.arima` will be performed on a
+set of \(ARIMA(p, 1, q)\) models, using AICc as our goodness-of-fit measure.
+While \(d\) has been robsutly estimated as , it too will be left blank for use
+in the automatic trial-and-error fitting procedures
+
+For V1, the best model using maximum likelihood is estimated as an
+ARIMA(`r V1p`, `r V1d`, `r V1q`). However, looking at the characteristic roots
+implies that this models may be unstable, as the majority of its roots lie on
+the boundary of the unit circle. This is despite the author's claim:
+"*The `auto.arima()` function is even stricter, and will not select a model*
+*with roots close to the unit circle*"
+([Section 8.7](https://otexts.com/fpp2/arima-r.html),
+Hyndman & Athanasopoulos 2018).
+
+```{r S1V1unitC1}
+autoplot(AAV1)
+```
+
+As models with too many roots near the unit circle are not good for forecasting,
+the total order of the ARIMA model will be constrained to 6, and tried again.
+This time, the selected model is an ARIMA(`r V1bp`, `r V1bd`, `r V1bq`) whose
+characteristic roots are well within the unit circle.
+
+```{r S1V1unitC2}
+autoplot(AAV1b)
+```
+
+Furthermore, the difference in AICc between this and the original model is
+minuscule: `r AAV1b$aicc - AAV1$aicc`. According to the rules of thumb of
+Burnham and Anderson (2012), that implies functionally no difference between the
+models.
+
+#### Residuals
+The residuals for this model visually exhibit very little heteroskedasticity, 
+and are particularly Gaussian in nature.
+```{r S1V1resid, echo=FALSE, fig.width=10L, fig.height=8L}
+checkresiduals(AAV1b)
+```
+
+#### Selection
+The ARIMA(`r V1bp`, `r V1bd`, `r V1bq`)model will be used to forecast Variable
+01 for Series 01.
+
+### Variable 02
+#### Missing Data
+There are no missing values for V2.
+
+#### Outliers
+Using the same technique, there are `r length(V2O$index)` outliers identified
+for V2.
+```{r, S1V2aOut}
+plot(S1V2, main = "Outliers for V1", ylab = "V1")
+points(V2O$index, V2O$replacements, col = 'red', pch = 16L)
+points(V2O$index, S1V2[V2O$index], col = 'blue', pch = 16L)
+legend('topleft', c("Outlier", "Replacement"), pch = 16L,
+       col = c('blue', 'red'))
+```
+
+In this case, the outliers are **clearly** extremes. Replacing the ouliers with
+the suggestions would result in the series in black becoming the one in green.
+```{r, S2V2cOut}
+plot(S1V2)
+lines(S1V2c, col = 'green4')
+```
+
+At this point, the analysis proceeded **without** replacing the outliers, but
+that will change once the model is fit below for reasons that will be explained.
+
+#### Stationarity
+It is clear that there is non-stationarity in V2 when looking at autocorrelation
+plots.
+
+```{r S1V2acf, echo=FALSE, fig.width=10L}
+ggAcf(S1V2, type = 'correlation') + ggtitle("V2 Autocorrelation")
+```
+
+The same tests as performed on V1 indicate that a difference of one lag will be
+sufficient here as well.
+
+```{r S1V2station, echo=TRUE}
+summary(ur.kpss(S1V2))
+summary(ur.kpss(diff(S1V2)))
+```
+
+#### Seasonality
+Once differenced, there is no apparent seasonality at any reasonable lag value.
+```{r S1V2lagplots, echo=FALSE, fig.width=10L}
+gglagplot(diff(S1V2),
+          set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 2") +
+  scale_x_continuous(breaks = breaks_extended(n = 3L),
+                     labels = label_scientific(digits = 1L)) 
+```
+
+#### ARIMA parameters
+Below are auto and partial autocorrelation plots for of the differenced values
+of V2.
+```{r S1V2aP, echo=FALSE, fig.width=10L}
+ggtsdisplay(diff(S1V2))
+```
+
+Here, there is cerainly more uncertainty as to what parameters should be
+selected. Therefore, the best option is once again an exhaustive search.
+
+Using the same exhaustive technique as for V1, the best selected model for V2 is
+an ARIMA(`r V2p`, `r V2d`, `r V2q`) model. The autoregressive component for V2
+makes sense in the context of the partial autocorrelation plot above; the fourth
+partial autocorrelation is larger in magnitude than all that follow. 
+
+However, once again, the characteristic roots imply instability.
+```{r S1V2unitC1, echo=FALSE}
+autoplot(AAV2) + ggtitle("Inverse Roots for V2")
+```
+
+Limiting the order to a maximum of 6 returns an
+ARIMA(`r V2bp`, `r V2bd`, `r V2bq`) model. Unfortunately, this model too
+exhibits instability.
+
+```{r S1V2unitC2, echo=FALSE}
+autoplot(AAV2b) + ggtitle("Inverse Roots for V2")
+```
+
+Moreover, the loss in AICc is `r AAV2b$aicc - AAV2$aicc`, implying very little
+support for the second model. Even relaxing the order to 7 does not help. The
+next "best" model is the order 8 ARIMA(4, 1, 4) found earlier. This is also the
+best model for orders up to 50 using `auto.arima` with its exhaustive search
+parameters set.
+
+#### Replacing the Outliers
+At this point, consideration was given to replacing the outliers found above.
+Quickly reprising the key graphics, this is a better behaved series.
+```{r S1V2c_1, echo=FALSE}
+ggAcf(S1V2c, type = 'correlation') + ggtitle("V2(repaired) Autocorrelation")
+```
+```{r S1V2c_2, echo=TRUE}
+summary(ur.kpss(S1V2c))
+summary(ur.kpss(diff(S1V2c)))
+```
+```{r S1V2c_3, echo=TRUE}
+ggtsdisplay(diff(S1V2c))
+```
+
+The best model under order 20 for the repaired version of Variable two is an
+ARIMA(`r V2cp`, `r V2cd`, `r V2cq`). It cannot be directly compared to the
+earlier two models, as it is based on different data. However, its
+characteristic roots are safer (not by much, though).
+
+```{r S1V2c_unitC2, echo=FALSE}
+autoplot(AAV2c)
+```
+
+#### Applying Box-Cox
+Given that there are transformations being performed to V2, it is prudent to
+investigate a Box-Cox transform too. Similar to the cases above, the important
+findings and graphics are reprised below.
+
+The best model under order 20 for V2 transformed via Box-Cox with
+\(\lambda = \)`r AAV2d$lambda[[1]]` is once again an
+ARIMA(`r V2dp`, `r V2dd`, `r V2dq`). It too cannot be directly compared to the
+earlier two models, as it is based on different data. Its characteristic roots
+not much better than the original either.
+
+```{r S1V2d_unitC2, echo=FALSE}
+autoplot(AAV2d)
+```
+
+#### Residuals
+At this point, it pays to compare the residuals of the three models for V2, in
+order.
+```{r S1V2dresid, echo=FALSE, fig.width=10L, fig.height=8L}
+checkresiduals(AAV2, main = "Residuals for Raw V2")
+checkresiduals(AAV2c, main = "Residuals for outlier-replaced V2")
+checkresiduals(AAV2d, main = "Residuals for Box-Cox transformed V2")
+```
+
+Clearly, the best residuals belong to the Box-Cox transformed model.
+
+#### Selection
+The ARIMA(`r V2dp`, `r V2dd`, `r V2dq`) with lambda `r AAV2d$lambda[[1]]` model
+will be used to forecast Variable 02 for Series 01.
+
+# References
+ * Hyndman, R.J., & Athanasopoulos, G. (2018)
+*Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne,
+Australia. OTexts.com/fpp2. Accessed on 2020-06-21
+
+ * Burnham, Kenneth P., and Anderson, David R. (2002).
+ *Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach*.
+ Second. New York: Springer Science+Business Media, Inc.
