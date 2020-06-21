@@ -49,5 +49,14 @@ for (i in seq_len(n)) {
 ```
 
 ## Data Investigation
-Each of the seperate series was investigated for correlation, autocorrelation,
-and stationarity.
+Each of the separate series was investigated for correlation, autocorrelation,
+and stationarity. For each data series, the last 140 periods are those needing
+the forecast. The first 1622 periods are the data.
+
+### Missing Data
+There are missing data elements in the series. Excluding the last 140 entries,
+the respective series are missing the following data elements:
+```{r missingData, echo=FALSE}
+DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
+   .SDcols = c(3:7), keyby = group] 
+```
