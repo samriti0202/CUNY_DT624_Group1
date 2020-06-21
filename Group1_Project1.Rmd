@@ -26,7 +26,7 @@ forecast the following series, each for 140 periods.
  * S05: Forecast Var02 and Var03
  * S06: Forecast Var05 and Var07
  
-The forecasts will be provided in a seperate Excel document. The code for the
+The forecasts will be provided in a separate Excel document. The code for the
 analysis can be found in the attached R markdown document.
 
 # Executive Summary
@@ -58,5 +58,9 @@ There are missing data elements in the series. Excluding the last 140 entries,
 the respective series are missing the following data elements:
 ```{r missingData, echo=FALSE}
 DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
-   .SDcols = c(3:7), keyby = group] 
+   .SDcols = c(3:7), keyby = group]
+# Following is useful to quickly remove "future" periods from groups
+futureobs <- 1623:1762
 ```
+
+These will be addressed in the individual series discussions.
