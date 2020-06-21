@@ -10,9 +10,12 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 library(readxl)
 library(fpp2)
+library(urca)
+library(ggplot2)
+library(scales)
 library(data.table)
 ```
 
@@ -58,8 +61,8 @@ the forecast. The first 1622 periods are the data.
 There are missing data elements in the series. Excluding the last 140 entries,
 the respective series are missing the following data elements:
 ```{r missingData, echo=FALSE}
-DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
-   .SDcols = c(3:7), keyby = group]
+knitr::kable(DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
+   .SDcols = c(3:7), keyby = group])
 # Following is useful to quickly remove "future" periods from groups
 futureobs <- 1623:1762
 ```
@@ -68,12 +71,19 @@ These will be addressed in the individual series discussions. The sections will
 address the key findings. Detailed technical analysis for those interested may
 be found in the appendix.
 
-### Series 01
-#### Observations
+## Series 01
+### Observations
 Variables 01 and 02 (V1 & V2 from now on) of Series 01 (S1 from now on) can each
-be considered a time series. Plotted on the same scale, it is clear that V1 is
-increasing and V2 is decreasing.
-```{r scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
+be considered a time series.
+```{r S1ts, echo=FALSE}
+S1ts <- ts(S01[-futureobs, 3:4])
+plot(S1ts)
+```
+
+Clearly V1 and V2 are negatively correlated with each other, as V1 has an
+increasing secular trend whereas V2 has an overall decreasing one. This is even
+more apparent when they are plotted after center-scaling and normalization.
+```{r S1scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
 V1 <- scale(S01$Var01[-futureobs])
 V2 <- scale(S01$Var02[-futureobs])
 plot(V2, type = 'l', col = 'green4', main = "Series 01 Variables",
@@ -81,22 +91,192 @@ plot(V2, type = 'l', col = 'green4', main = "Series 01 Variables",
 lines(V1, col = 'blue')
 legend('topright', legend = c('V1', 'V2'), col = c('blue', 'green4'), lty = 1L)
 ```
+```{r S1ARIMA, include=FALSE}
+AAV1 <- auto.arima(S1ts[, 1], max.order = 20L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+AAV2 <- auto.arima(S1ts[, 2], max.order = 20L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+V1p <- AAV1$arma[[1]]
+V1q <- AAV1$arma[[2]]
+V1d <- AAV1$arma[[5]]
+V2p <- AAV2$arma[[1]]
+V2q <- AAV2$arma[[2]]
+V2d <- AAV2$arma[[5]]
+```
+```{r S1ARIMA2, include=FALSE}
+AAV1b <- auto.arima(S1ts[, 1], max.order = 6L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+AAV2b <- auto.arima(S1ts[, 2], max.order = 6L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   parallel = TRUE)
+V1bp <- AAV1b$arma[[1]]
+V1bq <- AAV1b$arma[[2]]
+V1bd <- AAV1b$arma[[5]]
+V2bp <- AAV2b$arma[[1]]
+V2bq <- AAV2b$arma[[2]]
+V2bd <- AAV2b$arma[[5]]
+```
 
-What is of immediate interest is that while the values of the unscaled V1 are
-many orders of magnitude greater than those of V2, on a scaled bases its
-variance is significantly less.
+### Stationarity
+Both variables, as they stand are non-stationary. Statistical tests indicate
+that a difference of lag 1 is sufficient to induce stationarity.
 
-One also sees that clearly V1 and V2 are negatively correlated with each other,
-as V1 has an increasing secular trend whereas V2 has an overall decreasing one.
+### Seasonality
+Once differenced, neither variable exhibits seasonality.
 
-Initially, both multiplicative and additive time series were investigated.
+### Missing Data
+With no apparent seasonality, missing 2 out of 1662 values for V1 and none for
+V2 was deemed a *de minimus* issue and those observations were ignored for the
+purpose of time-series calculations.
 
+### ARIMA parameters
+The \(d\) parameter has already been estimated at 1. After much statistical
+analysis, the selected "best" models for purpose were an
+ARIMA(`r V1bp`, `r V1bd`, `r V1bq`) for 1 and an
+ARIMA(`r V2p`, `r V2d`, `r V2q`) for V2.
 
 # Technical Appendix
 The `R` language was used for this analysis. The reader of the appendix is
 assumed to have some basic statistical and programming experience.
+
 ## Series 01
-### Classical Decomposition
-#### Additive
+### Stationarity
+It is clear that there is non-stationarity in both variables when looking at
+autocorrelation plots.
 
+```{r S1acf, echo=FALSE, fig.width=10L}
+ggAcf(S1ts[, 1], type = 'correlation') + ggtitle("S1V1 Autocorrelation")
+ggAcf(S1ts[, 2], type = 'correlation') + ggtitle("S1V2 Autocorrelation")
+```
 
+The autocorrelation plot shows slowly decreasing but continually positive
+values, a clear sign of the existence of non-stationarity. Using the
+*Kwiatkowski-Phillips-Schmidt-Shin* test as suggested by the text implies that a
+difference of one lag will be sufficient for both time series, as the test
+statistic falls below the critical values for any sane level of confidence after
+a difference of one lag.
+```{r S1station, echo=TRUE}
+summary(ur.kpss(S1ts[, 1]))
+summary(ur.kpss(diff(S1ts[, 1])))
+summary(ur.kpss(S1ts[, 2]))
+summary(ur.kpss(diff(S1ts[, 2])))
+```
+
+### Seasonality
+Once differenced, there is no apparent seasonality at any reasonable lag value.
+```{r S1lagplots, echo=FALSE, fig.width=10L}
+gglagplot(diff(S1ts[, 1]),
+          set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 1")
+gglagplot(diff(S1ts[, 2]),
+          set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 2") +
+  scale_x_continuous(breaks = breaks_extended(n = 3L),
+                     labels = label_scientific(digits = 1L)) 
+```
+
+### ARIMA parameters
+Below are autocorrelation plots of the differenced values.
+```{r S1acD, echo=FALSE, fig.width=10L}
+ggAcf(diff(S1ts[, 1]), type = 'correlation') +
+  ggtitle("Differenced S1V1 Autocorrelation")
+ggAcf(diff(S1ts[, 2]), type = 'correlation') +
+  ggtitle("Differenced S1V2 Autocorrelation")
+```
+
+The sharp cutoff after lag 2 for V1 implies that V1 will require a MA component
+of at least 2. For V2, there are a number of spikes, which indicate that a
+consideration of AR terms may be necessary.
+
+Below are partial autocorrelation plots of the differenced values.
+
+```{r S1pacD, echo=FALSE, fig.width=10L}
+ggPacf(diff(S1ts[, 1])) + ggtitle("Differenced S1V1 Partial Autocorrelation")
+ggPacf(diff(S1ts[, 2])) + ggtitle("Differenced S1V2 Partial Autocorrelation")
+```
+
+Once again, there seems to be a sharp cutoff for V1 at 2, which implies an AR
+component of at least 2 as well. Similarly for V2, there are a number of spikes.
+
+### ARIMA Parameters
+
+At this point we proceed to trial and error for a set of \(ARIMA(p, 1, q)\)
+models, using AICc as our goodness-of-fit measure. As within 10 lags V2 shows
+significant pACF and ACF spikes out to at least lag 8, a max order of 20 will be
+used to reflect that \(p + q + 1\) may be large. While we are comfortable with
+\(d\) being 1, it too will be left blank for use in the automatic
+trial-and-error fitting procedures for both V1 and V2.
+
+For V1, the best model using maximum likelihood is estimated as an
+ARIMA(`r V1p`, `r V1d`, `r V1q`) and for V2 it is an
+ARIMA(`r V2p`, `r V2d`, `r V2q`) model. The autoregressive component for V2
+makes sense in the context of the partial autocorrelation plot above; the fourth
+partial autocorrelation is larger in magnitude than all that follow. The
+result for V1 is less obvious, but does return a better AICc than the other
+models investigated manually and automatically.
+
+However, looking at the characteristic roots immply that both these models may
+be unstable, as the majority of the roots lie on the boundary of the unit
+circle.
+```{r S1unitC}
+autoplot(AAV1) + ggtitle("Inverse Roots for V1")
+autoplot(AAV2) + ggtitle("Inverse Roots for V2")
+```
+
+This is despite the author's claim "*The `auto.arima()` function is even*
+*stricter, and will not select a model with roots close to the unit circle*"
+([Section 8.7](https://otexts.com/fpp2/arima-r.html),
+Hyndman & Athanasopoulos 2018).
+
+As models with too many roots near the unit circle are not good for forecasting,
+the total order of the ARIMA models will be constrained to 6, and tried again.
+
+```{r S1Model2plot, echo=FALSE}
+autoplot(AAV1b) + ggtitle("Inverse Roots for V1")
+autoplot(AAV2b) + ggtitle("Inverse Roots for V2")
+```
+
+The new model ARIMA(`r V1bp`, `r V1bd`, `r V1bq`) model for V1 has its roots
+well within the unit circle, and the difference in AICc is miniscule:
+`r AAV1b$aicc - AAV1$aicc` which according to the rules of thumb of Burnham and
+Anderson (2012) mean functionally no difference.
+
+That cannot be said for the new ARIMA(`r V2bp`, `r V2bd`, `r V2bq`) model for
+V2. Firstly its characteristic roots remain close to the boundary of the unit
+circle. Moreover, the loss in AICc is `r AAV2b$aicc - AAV2$aicc`, meaning very
+little support for the second model. Even relaxing the order to 7 does not help.
+The next "best" model is the order 8 ARIMA(4, 1, 4) found earlier. This is also
+the best model for orders up to 50 using `auto.arima` with its exhaustive search
+parameters set.
+
+Therefore, with some trepidation, the selected models will be the
+ARIMA(`r V1bp`, `r V1bd`, `r V1bq`) model for variable V1 and the original
+ARIMA(`r V2p`, `r V2d`, `r V2q`) model for V2.
+
+### Residuals
+Given the models, the residuals visually exhibit very little heteroskedasticity.
+The distribution residuals for V1 are particularly clean. For V2, there does
+exist skew, implying outliers even after the model has been fit.
+```{r S1resid, echo=FALSE, fig.width=10L, fig.height=8L}
+checkresiduals(AAV1b)
+checkresiduals(AAV2)
+```
+
+It should be noted that the lower-order models for V2 failed the Ljung-Box test
+at levels of 0.01. With the move to stop blond reliance on p-values which is
+sweeping the statistical world,[^1] the p-value for the complex V2 model is not
+deemed fatal.
+
+[^1]: Rightfully in *this* student's eyes.
+
+# References
+ * Hyndman, R.J., & Athanasopoulos, G. (2018)
+*Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne,
+Australia. OTexts.com/fpp2. Accessed on 2020-06-21
+
+ * Burnham, Kenneth P., and Anderson, David R. (2002).
+ *Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach*.
+ Second. New York: Springer Science+Business Media, Inc.
