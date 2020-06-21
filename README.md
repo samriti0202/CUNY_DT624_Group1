@@ -30,7 +30,7 @@ Submitted: :heavy_check_mark:
 |Task|Student|Completed|
 |----|-------|:-------:|
 |S01|Avraham Adler||
-|S02|||
+|S02| Vishal Arora||
 |S03|||
 |S04|||
 |S05|||
