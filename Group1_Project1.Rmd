@@ -63,4 +63,31 @@ DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
 futureobs <- 1623:1762
 ```
 
-These will be addressed in the individual series discussions.
+These will be addressed in the individual series discussions. The sections will
+address the key findings. Detailed technical analysis for those interested may
+be found in the appendix.
+
+### Series 01
+#### Observations
+Variables 01 and 02 (V1 & V2 from now on) of Series 01 (S1 from now on) can each
+be considered a time series. Plotted on the same scale, it is clear that V1 is
+increasing and V2 is decreasing.
+```{r scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
+V1 <- scale(S01$Var01[-futureobs])
+V2 <- scale(S01$Var02[-futureobs])
+plot(V2, type = 'l', col = 'green4', main = "Series 01 Variables",
+     xlab = "Time", ylab = "Scaled Values", ylim = c(-2, 8))
+lines(V1, col = 'blue')
+legend('topright', legend = c('V1', 'V2'), col = c('blue', 'green4'), lty = 1L)
+```
+
+What is of immediate interest is that while the values of the unscaled V1 are
+many orders of magnitude greater than those of V2, on a scaled bases its
+variance is significantly less.
+
+One also sees that clearly V1 and V2 are negatively correlated with each other,
+as V1 has an increasing secular trend whereas V2 has an overall decreasing one.
+
+
+# Technical Appendix
+
