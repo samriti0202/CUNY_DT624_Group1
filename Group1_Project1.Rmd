@@ -147,6 +147,85 @@ plot(forecast(AAV1b, h = 140), main = "Forecast for V1")
 plot(forecast(AAV2d, h = 140, biasadj = TRUE), main = "Forecast for V2")
 ```
 
+## Series 3
+
+### Series Visualization
+```{r s3}
+S3 <- ts(S03[-futureobs, 6:7])
+autoplot(S3) + ylab('Value') + xlab('Time') + ggtitle('Var05 vs Var07')
+```
+
+The two series of interest appear to be extremely similar, although one of the series appears to be slightly more volatile than the other. Likely the forecasts for these two series will be almost identical. We can also see on the graph what appears to be missing values towards the very end of the series.
+
+The data appear to have a strong trend but no clear seasonal pattern, which will aid us in our modeling in the future.
+
+### Missing Values
+
+missing values were imputed linearly to create a smooth timeseries.
+
+```{r s3NA-exec, echo = F, include = F}
+sum(is.na(S3))
+
+sum(is.na(S3[,1]))
+sum(is.na(S3[,2]))
+
+S3 <- ts(sapply(S3, function(X) approxfun(seq_along(X), X)(seq_along(X))))
+
+sum(is.na(S3))
+```
+
+### Outliers
+The series have a single outlier between them which is also apparent in the plot of the timeseries above. However, since the series are so similar and this is one of the defining differences of the series, I think it would be unwise to remove this outlier.
+
+### Baseline Model
+
+Since the data has a clear trend component but no seasonality component, a simple random walk with drift will serve as a good baseline model.
+
+```{r s3var1-drift, echo = F}
+s3v1 <- S3[,1]
+s3v2 <- S3[,2]
+
+rwf(s3v1, h = 140, drift = T) %>% autoplot() + ylab('Var05')
+rwf(s3v2, h = 140, drift = T) %>% autoplot() + ylab('Var07')
+```
+
+The cumulative error for our baseline model is 3700, which is meaningless in and of itself but will be an excellent comparison point for other models.
+
+### Exponential Smoothing model
+
+Due the the nature of the data, a linear trend model is a natural choice as an attempt to model the data.
+
+```{r, echo = F}
+fit <- ets(s3v1, model = 'AAN', damped = F)
+fit %>% forecast(h = 140) %>% autoplot() + ylab('Var05')
+
+fit2 <- ets(s3v2, model = 'AAN', damped = F)
+fit2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
+```
+
+Exponential Smoothing models achieved an error of 3650, a slight improvement on the baseline model.
+
+### Differencing Data
+
+The data is clearly non stationary which means it is not appropriate for ARIMA modeling. We can solve this by taking the first (or potentially second) difference between observations.
+
+The new differnced data is stationary and therefore appropriate for ARIMA modeling. Diagnostic tests suggest either an ARIMA(1,1,0) model or an ARIMA(2,1,0) model.
+
+### ARIMA Model
+
+The most appropriate ARIMA model is an ARIMA(1,1,0) model as the data is clearly not stationary and needs to be differenced. This choice of model parameters can be confirmed both by data visualization and by the auto arima function in R.
+
+```{r, echo = F}
+# data indicates an AR 1 model from ACF and PACF
+arima_s3v1 <- Arima(s3v1, order = c(1,1,0), include.drift = T)
+arima_s3v1 %>% forecast(h = 140) %>% autoplot() + ylab('Var05')
+
+arima_s3v2 <- Arima(s3v2, order = c(1,1,0), include.drift = T)
+arima_s3v2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
+```
+
+The ARIMA model has an error of 3630, the lowest of the 3 models. All 3 models make very similar looking positions so we will select the ARIMA model as it has the lowest error across the validation period.
+
 # Analytical Appendix
 ## Data Preprocessing
 The data was converted to CSV, read into R, and then split into separate files
@@ -412,3 +491,99 @@ Australia. OTexts.com/fpp2. Accessed on 2020-06-21
  * Burnham, Kenneth P., and Anderson, David R. (2002).
  *Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach*.
  Second. New York: Springer Science+Business Media, Inc.
+ 
+## Series 3
+
+### Missing Value Imputation
+
+Below is the code used to linearly impute the missing values.
+
+```{r s3NA, include = T}
+sum(is.na(S3))
+
+sum(is.na(S3[,1]))
+sum(is.na(S3[,2]))
+
+S3 <- ts(sapply(S3, function(X) approxfun(seq_along(X), X)(seq_along(X))))
+
+sum(is.na(S3))
+```
+
+### Outliers
+
+```{r}
+s31out <- tsoutliers(S3[,1])
+s32out <- tsoutliers(S3[,2])
+
+data.frame(S3) %>% ggplot() + geom_line(aes(x = 1:length(S3[,1]), y = Var05), color = 'green4') + geom_point(data = data.frame(s31out), aes(x = index, y = replacements), color = 'blue', size = 2) + geom_point(aes(x = s31out$index, y = Var05[s31out$index]), color = 'red', size = 2) + xlab('Time') + ylab('Values') + ggtitle('Var05 With Outlier and Replacement Shown')
+```
+
+Due to this outlier being one of the defining differences between the two timeseries we will not be adjusting the outlier to its recommended replacement.
+
+### Calculating Error
+
+To calculate the error for each model, we created a model at each timestep using previous data and predict one timestep ahead. We then compare the predicted value to the actual value to generate an error at this time step. The overall error is the sum of squared errors.
+
+### Drift Model Error
+
+```{r, include = T}
+drift_sse_v1 <- 0
+for(i in 100:(length(s3v1)-1)){
+  pred <- rwf(s3v1[1:i], h = 1, drift = T)
+  error <- as.numeric(pred$mean) - s3v1[i+1]
+  drift_sse_v1 <- drift_sse_v1 + error**2
+}
+drift_sse_v1
+```
+
+### Exponential Smoothing Error
+
+```{r, include = T}
+ets_sse <- 0
+for(i in 100:(length(s3v1)-1)){
+  model <- ets(s3v1[1:i], model = 'AAN')
+  pred <- model %>% forecast(h = 1)
+  error <- as.numeric(pred$mean) - s3v1[i+1]
+  ets_sse <- ets_sse + error**2
+}
+ets_sse
+```
+
+### ARIMA Parameter Selection
+
+The ACF plot indicates a strong trend component to the data. the PACF plot indicates that there is little to no seasonality as entries far in the past are not predictive of entries in the future. I also used a PACF plot of length 300 to check for any daily seasonality but it appears there is no strong daily seasonality on the yearly scale either.
+
+```{r, warning = F}
+library(tseries)
+
+kpss.test(s3v1)
+kpss.test(diff(s3v1))
+
+diff(s3v1) %>% autoplot()
+acf(s3v1)
+Pacf(s3v1)
+Pacf(s3v1, 370)
+```
+
+The decreasing ACF values coupled with the large spike in the PACF values at 1 is indicative of an AR(1) model, leading us to believe that the best ARIMA model would be an ARIMA(1,1,0) model.
+
+### ARIMA Error
+
+```{r, include = T}
+arima_sse <- 0
+for(i in 100:(length(s3v1)-1)){
+  model <- Arima(s3v1[1:i], order = c(1,1,0), include.drift = T)
+  pred <- model %>% forecast(h = 1)
+  error <- as.numeric(pred$mean) - s3v1[i+1]
+  arima_sse <- arima_sse + error**2
+}
+```
+
+### Model Residuals
+
+```{r}
+checkresiduals(arima_s3v1)
+checkresiduals(fit)
+```
+
+Both sets of residuals appear to resemble a normal distribution with some strong outliers due to the volatile nature of the series. However the exponential smoothing model does not pass  the Ljung-Box test with a p-value of .03, indicating that some of the residuals from the exponential smoothing model may be correlated and that the model could be improved. As such, this further confirms our decision to use the ARIMA model for this series.
