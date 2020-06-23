@@ -483,15 +483,6 @@ Clearly, the best residuals belong to the Box-Cox transformed model.
 The ARIMA(`r V2dp`, `r V2dd`, `r V2dq`) with lambda `r AAV2d$lambda[[1]]` model
 will be used to forecast Variable 02 for Series 01.
 
-# References
- * Hyndman, R.J., & Athanasopoulos, G. (2018)
-*Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne,
-Australia. OTexts.com/fpp2. Accessed on 2020-06-21
-
- * Burnham, Kenneth P., and Anderson, David R. (2002).
- *Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach*.
- Second. New York: Springer Science+Business Media, Inc.
- 
 ## Series 3
 
 ### Missing Value Imputation
@@ -587,3 +578,12 @@ checkresiduals(fit)
 ```
 
 Both sets of residuals appear to resemble a normal distribution with some strong outliers due to the volatile nature of the series. However the exponential smoothing model does not pass  the Ljung-Box test with a p-value of .03, indicating that some of the residuals from the exponential smoothing model may be correlated and that the model could be improved. As such, this further confirms our decision to use the ARIMA model for this series.
+
+# References
+ * Hyndman, R.J., & Athanasopoulos, G. (2018)
+*Forecasting: principles and practice*, 2nd edition, OTexts: Melbourne,
+Australia. OTexts.com/fpp2. Accessed on 2020-06-21
+
+ * Burnham, Kenneth P., and Anderson, David R. (2002).
+ *Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach*.
+ Second. New York: Springer Science+Business Media, Inc.
