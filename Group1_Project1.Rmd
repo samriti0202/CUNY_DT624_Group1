@@ -80,10 +80,10 @@ V1O <- tsoutliers(S1V1)
 V2O <- tsoutliers(S1V2)
 S1V2c <- tsclean(S1V2)
 AAV1 <- auto.arima(S1V1, max.order = 20L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
 AAV2 <- auto.arima(S1V2, max.order = 20L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
 V1p <- AAV1$arma[[1]]
 V1q <- AAV1$arma[[2]]
@@ -91,11 +91,11 @@ V1d <- AAV1$arma[[5]]
 V2p <- AAV2$arma[[1]]
 V2q <- AAV2$arma[[2]]
 V2d <- AAV2$arma[[5]]
-AAV1b <- auto.arima(S1V1, max.order = 6L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+AAV1b <- auto.arima(S1V1, max.order = 4L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
-AAV2b <- auto.arima(S1V2, max.order = 6L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+AAV2b <- auto.arima(S1V2, max.order = 4L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
 V1bp <- AAV1b$arma[[1]]
 V1bq <- AAV1b$arma[[2]]
@@ -105,13 +105,13 @@ V2bq <- AAV2b$arma[[2]]
 V2bd <- AAV2b$arma[[5]]
 
 AAV2c <- auto.arima(S1V2c, max.order = 20L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
 V2cp <- AAV2c$arma[[1]]
 V2cq <- AAV2c$arma[[2]]
 V2cd <- AAV2c$arma[[5]]
 AAV2d <- auto.arima(S1V2, max.order = 20L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, allowdrift = FALSE, seasonal = FALSE,
+                   approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE, lambda = 'auto')
 V2dp <- AAV2d$arma[[1]]
 V2dq <- AAV2d$arma[[2]]
@@ -155,15 +155,19 @@ S3 <- ts(S03[-futureobs, 6:7])
 autoplot(S3) + ylab('Value') + xlab('Time') + ggtitle('Var05 vs Var07')
 ```
 
-The two series of interest appear to be extremely similar, although one of the series appears to be slightly more volatile than the other. Likely the forecasts for these two series will be almost identical. We can also see on the graph what appears to be missing values towards the very end of the series.
+The two series of interest appear to be extremely similar, although one of the
+series appears to be slightly more volatile than the other. Likely the forecasts
+for these two series will be almost identical. We can also see on the graph what
+appears to be missing values towards the very end of the series.
 
-The data appear to have a strong trend but no clear seasonal pattern, which will aid us in our modeling in the future.
+The data appear to have a strong trend but no clear seasonal pattern, which will
+aid us in our modeling in the future.
 
 ### Missing Values
 
 missing values were imputed linearly to create a smooth timeseries.
 
-```{r s3NA-exec, echo = F, include = F}
+```{r s3NA-exec, echo=F, include=F}
 sum(is.na(S3))
 
 sum(is.na(S3[,1]))
@@ -175,11 +179,15 @@ sum(is.na(S3))
 ```
 
 ### Outliers
-The series have a single outlier between them which is also apparent in the plot of the timeseries above. However, since the series are so similar and this is one of the defining differences of the series, I think it would be unwise to remove this outlier.
+The series have a single outlier between them which is also apparent in the plot
+of the timeseries above. However, since the series are so similar and this is
+one of the defining differences of the series, I think it would be unwise to
+remove this outlier.
 
 ### Baseline Model
 
-Since the data has a clear trend component but no seasonality component, a simple random walk with drift will serve as a good baseline model.
+Since the data has a clear trend component but no seasonality component, a
+simple random walk with drift will serve as a good baseline model.
 
 ```{r s3var1-drift, echo = F}
 s3v1 <- S3[,1]
@@ -189,11 +197,13 @@ rwf(s3v1, h = 140, drift = T) %>% autoplot() + ylab('Var05')
 rwf(s3v2, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 ```
 
-The cumulative error for our baseline model is 3700, which is meaningless in and of itself but will be an excellent comparison point for other models.
+The cumulative error for our baseline model is 3700, which is meaningless in and
+of itself but will be an excellent comparison point for other models.
 
 ### Exponential Smoothing model
 
-Due the the nature of the data, a linear trend model is a natural choice as an attempt to model the data.
+Due the the nature of the data, a linear trend model is a natural choice as an
+attempt to model the data.
 
 ```{r, echo = F}
 fit <- ets(s3v1, model = 'AAN', damped = F)
@@ -203,17 +213,24 @@ fit2 <- ets(s3v2, model = 'AAN', damped = F)
 fit2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 ```
 
-Exponential Smoothing models achieved an error of 3650, a slight improvement on the baseline model.
+Exponential Smoothing models achieved an error of 3650, a slight improvement on
+the baseline model.
 
 ### Differencing Data
 
-The data is clearly non stationary which means it is not appropriate for ARIMA modeling. We can solve this by taking the first (or potentially second) difference between observations.
+The data is clearly non stationary which means it is not appropriate for ARIMA
+modeling. We can solve this by taking the first (or potentially second)
+difference between observations.
 
-The new differnced data is stationary and therefore appropriate for ARIMA modeling. Diagnostic tests suggest either an ARIMA(1,1,0) model or an ARIMA(2,1,0) model.
+The new differnced data is stationary and therefore appropriate for ARIMA
+modeling. Diagnostic tests suggest either an ARIMA(1,1,0) model or an
+ARIMA(2,1,0) model.
 
 ### ARIMA Model
 
-The most appropriate ARIMA model is an ARIMA(1,1,0) model as the data is clearly not stationary and needs to be differenced. This choice of model parameters can be confirmed both by data visualization and by the auto arima function in R.
+The most appropriate ARIMA model is an ARIMA(1,1,0) model as the data is clearly
+not stationary and needs to be differenced. This choice of model parameters can
+be confirmed both by data visualization and by the auto arima function in R.
 
 ```{r, echo = F}
 # data indicates an AR 1 model from ACF and PACF
@@ -224,7 +241,9 @@ arima_s3v2 <- Arima(s3v2, order = c(1,1,0), include.drift = T)
 arima_s3v2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 ```
 
-The ARIMA model has an error of 3630, the lowest of the 3 models. All 3 models make very similar looking positions so we will select the ARIMA model as it has the lowest error across the validation period.
+The ARIMA model has an error of 3630, the lowest of the 3 models. All 3 models
+make very similar looking positions so we will select the ARIMA model as it has
+the lowest error across the validation period.
 
 # Analytical Appendix
 ## Data Preprocessing
@@ -302,10 +321,11 @@ ggtsdisplay(diff(S1V1))
 
 The positive ACF lag 1 with cutoff after lag 2 implies that V1 will require a MA
 component of at least 2. It's more difficult to immediately identify an AR
-componenent, so an exhaustive search using `auto.arima` will be performed on a
+component, so an exhaustive search using `auto.arima` will be performed on a
 set of \(ARIMA(p, 1, q)\) models, using AICc as our goodness-of-fit measure.
-While \(d\) has been robsutly estimated as , it too will be left blank for use
-in the automatic trial-and-error fitting procedures
+While \(d\) has been robustly estimated as 1, it too will be left blank for use
+in the automatic trial-and-error fitting procedures. Lastly, as the entirety of
+V1 demonstrates a clear upward trend, fitting will be with drift allowed.
 
 For V1, the best model using maximum likelihood is estimated as an
 ARIMA(`r V1p`, `r V1d`, `r V1q`). However, looking at the characteristic roots
