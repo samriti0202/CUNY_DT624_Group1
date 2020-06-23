@@ -22,7 +22,7 @@ library(data.table)
 DT <- read_xls('./project1data/Data Set for class.xls')
 # Set as data table
 setDT(DT)
-# Seperate out groups
+# Separate out groups
 n <- length(unique(DT$group))
 for (i in seq_len(n)) {
   gName <- paste0('S0', i)
@@ -47,8 +47,8 @@ forecast the following series, each for 140 periods.
 The forecasts will be provided in a separate Excel document. The code for the
 analysis can be found in the attached R markdown document.
 
-The **executive summmary** will contain the key findings. The more detailed
-analysis may be found in the **analyitical appendix** for those interested in
+The **executive summary** will contain the key findings. The more detailed
+analysis may be found in the **analytical appendix** for those interested in
 the findings and decisions applied.
 
 # Executive Summary
@@ -122,14 +122,14 @@ included an option with a Box-Cox transform to reduce its variability.
 Exponentially smoothed and ARIMA models were reviewed, with details in the
 appendix. The selected model for V1 is an ARIMA(`r V1p`, `r V1d`, `r V1q`)
 with drift and for V2 it is an ARIMA(`r V2lp`, `r V2ld`, `r V2lq`) with a
-Box-Cox \(lambda\) of `r AAV2l$lambda[[1]]`
+Box-Cox \(\lambda\) of `r AAV2l$lambda[[1]]`
 
 ### Forecasts
 The mean forecast values will be supplied in the attached Excel workbook. The
 mean forecasts with error bands are plotted below
-```{r V1plot, echo=FALSE}
-plot(forecast(AAV1, h = 140), main = "Forecast for V1")
-plot(forecast(AAV2l, h = 140, lambda = AAV2l$lambda[[1]], biasadj = TRUE),
+```{r S1forecastplots, echo=FALSE}
+autoplot(forecast(AAV1, h = 140), main = "Forecast for V1")
+autoplot(forecast(AAV2l, h = 140, lambda = AAV2l$lambda[[1]], biasadj = TRUE),
      main = "Forecast for V2")
 ```
 
@@ -206,7 +206,7 @@ The data is clearly non stationary which means it is not appropriate for ARIMA
 modeling. We can solve this by taking the first (or potentially second)
 difference between observations.
 
-The new differnced data is stationary and therefore appropriate for ARIMA
+The new differenced data is stationary and therefore appropriate for ARIMA
 modeling. Diagnostic tests suggest either an ARIMA(1,1,0) model or an
 ARIMA(2,1,0) model.
 
@@ -371,7 +371,7 @@ legend('topleft', c("Outlier", "Replacement"), pch = 16L,
        col = c('blue', 'red'))
 ```
 
-In this case, the outliers are **clearly** extremes. Replacing the ouliers with
+In this case, the outliers are **clearly** extremes. Replacing the outliers with
 the suggestions would result in the series in black becoming the one in green.
 ```{r, S2V2cOut}
 plot(S1V2)
@@ -447,8 +447,8 @@ The best model under order 20 for V2 transformed via Box-Cox (\(\lambda = \)
 It too cannot be directly compared to the earlier two models, as it is based on
 different data. Its characteristic roots are not much better than the original.
 
-```{r S1V2d_unitC2, echo=FALSE}
-autoplot(AAV2d)
+```{r S1V2l_unitC2, echo=FALSE}
+autoplot(AAV2l)
 ```
 
 However, its residuals show clear improvement.
