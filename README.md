@@ -30,9 +30,9 @@ Submitted: :heavy_check_mark:
 |Task|Student|Completed|
 |----|-------|:-------:|
 |S01|Avraham Adler||
-|S02| Vishal Arora||
-|S03|||
-|S04|||
+|S02|Vishal Arora||
+|S03|Sam Bellows||
+|S04|Austin Chan||
 |S05|||
 |S06|||
 |Compilation|Group||
