@@ -91,10 +91,10 @@ V1d <- AAV1$arma[[5]]
 V2p <- AAV2$arma[[1]]
 V2q <- AAV2$arma[[2]]
 V2d <- AAV2$arma[[5]]
-AAV1b <- auto.arima(S1V1, max.order = 4L, ic = 'aicc', stepwise = FALSE,
+AAV1b <- auto.arima(S1V1, max.order = 5L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
-AAV2b <- auto.arima(S1V2, max.order = 4L, ic = 'aicc', stepwise = FALSE,
+AAV2b <- auto.arima(S1V2, max.order = 5L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, allowdrift = TRUE, seasonal = FALSE,
                    parallel = TRUE)
 V1bp <- AAV1b$arma[[1]]
@@ -341,7 +341,7 @@ autoplot(AAV1)
 ```
 
 As models with too many roots near the unit circle are not good for forecasting,
-the total order of the ARIMA model will be constrained to 6, and tried again.
+the total order of the ARIMA model will be constrained to 5, and tried again.
 This time, the selected model is an ARIMA(`r V1bp`, `r V1bd`, `r V1bq`) whose
 characteristic roots are well within the unit circle.
 
