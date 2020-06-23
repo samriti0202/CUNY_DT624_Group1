@@ -484,11 +484,8 @@ The ARIMA(`r V2dp`, `r V2dd`, `r V2dq`) with lambda `r AAV2d$lambda[[1]]` model
 will be used to forecast Variable 02 for Series 01.
 
 ## Series 3
-
 ### Missing Value Imputation
-
 Below is the code used to linearly impute the missing values.
-
 ```{r s3NA, include = T}
 sum(is.na(S3))
 
@@ -501,23 +498,31 @@ sum(is.na(S3))
 ```
 
 ### Outliers
-
-```{r}
+```{r S3Outliers}
 s31out <- tsoutliers(S3[,1])
 s32out <- tsoutliers(S3[,2])
 
-data.frame(S3) %>% ggplot() + geom_line(aes(x = 1:length(S3[,1]), y = Var05), color = 'green4') + geom_point(data = data.frame(s31out), aes(x = index, y = replacements), color = 'blue', size = 2) + geom_point(aes(x = s31out$index, y = Var05[s31out$index]), color = 'red', size = 2) + xlab('Time') + ylab('Values') + ggtitle('Var05 With Outlier and Replacement Shown')
+data.frame(S3) %>% ggplot() +
+  geom_line(aes(x = 1:length(S3[,1]), y = Var05), color = 'green4') +
+  geom_point(data = data.frame(s31out), aes(x = index, y = replacements),
+             color = 'blue', size = 2) +
+  geom_point(aes(x = s31out$index, y = Var05[s31out$index]),
+             color = 'red', size = 2) +
+  xlab('Time') + ylab('Values') +
+  ggtitle('Var05 With Outlier and Replacement Shown')
 ```
 
-Due to this outlier being one of the defining differences between the two timeseries we will not be adjusting the outlier to its recommended replacement.
+Due to this outlier being one of the defining differences between the two
+timeseries we will not be adjusting the outlier to its recommended replacement.
 
 ### Calculating Error
-
-To calculate the error for each model, we created a model at each timestep using previous data and predict one timestep ahead. We then compare the predicted value to the actual value to generate an error at this time step. The overall error is the sum of squared errors.
+To calculate the error for each model, we created a model at each timestep using
+previous data and predict one timestep ahead. We then compare the predicted
+value to the actual value to generate an error at this time step. The overall
+error is the sum of squared errors.
 
 ### Drift Model Error
-
-```{r, include = T}
+```{r S3Drift, echo=TRUE}
 drift_sse_v1 <- 0
 for(i in 100:(length(s3v1)-1)){
   pred <- rwf(s3v1[1:i], h = 1, drift = T)
@@ -528,8 +533,7 @@ drift_sse_v1
 ```
 
 ### Exponential Smoothing Error
-
-```{r, include = T}
+```{r S3ExpSmthErr, echo=TRUE}
 ets_sse <- 0
 for(i in 100:(length(s3v1)-1)){
   model <- ets(s3v1[1:i], model = 'AAN')
@@ -541,10 +545,13 @@ ets_sse
 ```
 
 ### ARIMA Parameter Selection
+The ACF plot indicates a strong trend component to the data. the PACF plot
+indicates that there is little to no seasonality as entries far in the past are
+not predictive of entries in the future. I also used a PACF plot of length 300
+to check for any daily seasonality but it appears there is no strong daily
+seasonality on the yearly scale either.
 
-The ACF plot indicates a strong trend component to the data. the PACF plot indicates that there is little to no seasonality as entries far in the past are not predictive of entries in the future. I also used a PACF plot of length 300 to check for any daily seasonality but it appears there is no strong daily seasonality on the yearly scale either.
-
-```{r, warning = F}
+```{r S3ARIMA_1, warning=FALSE}
 library(tseries)
 
 kpss.test(s3v1)
@@ -556,11 +563,12 @@ Pacf(s3v1)
 Pacf(s3v1, 370)
 ```
 
-The decreasing ACF values coupled with the large spike in the PACF values at 1 is indicative of an AR(1) model, leading us to believe that the best ARIMA model would be an ARIMA(1,1,0) model.
+The decreasing ACF values coupled with the large spike in the PACF values at 1
+is indicative of an AR(1) model, leading us to believe that the best ARIMA model
+would be an ARIMA(1,1,0) model.
 
 ### ARIMA Error
-
-```{r, include = T}
+```{r S3ARIMA_2, echo=TRUE}
 arima_sse <- 0
 for(i in 100:(length(s3v1)-1)){
   model <- Arima(s3v1[1:i], order = c(1,1,0), include.drift = T)
@@ -571,13 +579,17 @@ for(i in 100:(length(s3v1)-1)){
 ```
 
 ### Model Residuals
-
-```{r}
+```{r S3Residuals}
 checkresiduals(arima_s3v1)
 checkresiduals(fit)
 ```
 
-Both sets of residuals appear to resemble a normal distribution with some strong outliers due to the volatile nature of the series. However the exponential smoothing model does not pass  the Ljung-Box test with a p-value of .03, indicating that some of the residuals from the exponential smoothing model may be correlated and that the model could be improved. As such, this further confirms our decision to use the ARIMA model for this series.
+Both sets of residuals appear to resemble a normal distribution with some strong
+outliers due to the volatile nature of the series. However the exponential
+smoothing model does not pass  the Ljung-Box test with a p-value of .03,
+indicating that some of the residuals from the exponential smoothing model may
+be correlated and that the model could be improved. As such, this further
+confirms our decision to use the ARIMA model for this series.
 
 # References
  * Hyndman, R.J., & Athanasopoulos, G. (2018)
