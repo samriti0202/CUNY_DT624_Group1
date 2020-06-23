@@ -130,7 +130,7 @@ With no apparent seasonality, the missing 2 variables for out of 1662 values for
 V1 were imputed by linear interpolation. There are no missing values for V2.
 
 ### Transformations
-After much analsyis, V1 was modeled with neither outlier replacement nor
+After much analysis, V1 was modeled with neither outlier replacement nor
 transform and V2 was modeled without explicit outlier replacement but with a
 Box-Cox transform to reduce variability.
 
@@ -140,7 +140,7 @@ for V2 it is an ARIMA(`r V2p`, `r V2d`, `r V2q`) with a Box-Cox \(lambda\) of
 `r AAV2d$lambda[[1]]`
 
 ### Forecasts
-The mean forcast values will be supplied in the attached Excel workbook. The
+The mean forecast values will be supplied in the attached Excel workbook. The
 mean forecasts with error bands are plotted below
 ```{r V1plot, echo=FALSE}
 plot(forecast(AAV1b, h = 140), main = "Forecast for V1")
@@ -262,7 +262,6 @@ knitr::kable(DT[, lapply(.SD, function(x) sum(is.na(x)) - 140),
 ```
 
 These will be addressed in the individual series discussions.
-
 
 ## Series 01
 ### Variable 01
