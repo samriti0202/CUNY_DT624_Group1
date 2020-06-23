@@ -81,9 +81,9 @@ S1V2 <- S1ts[, 2]
 V1O <- tsoutliers(S1V1)
 V2O <- tsoutliers(S1V2)
 S1V2c <- tsclean(S1V2)
-AAV1 <- auto.arima(S1V1, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+AAV1 <- auto.arima(S1V1, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE)
-AAV2 <- auto.arima(S1V2, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+AAV2 <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE)
 V1p <- AAV1$arma[[1]]
 V1q <- AAV1$arma[[2]]
@@ -91,7 +91,7 @@ V1d <- AAV1$arma[[5]]
 V2p <- AAV2$arma[[1]]
 V2q <- AAV2$arma[[2]]
 V2d <- AAV2$arma[[5]]
-AAV2l <- auto.arima(S1V2, max.order = 20L, ic = 'aicc', stepwise = FALSE,
+AAV2l <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE,
                    lambda = 'auto', biasadj = TRUE)
 V2lp <- AAV2l$arma[[1]]
@@ -128,9 +128,9 @@ Box-Cox \(\lambda\) of `r AAV2l$lambda[[1]]`
 The mean forecast values will be supplied in the attached Excel workbook. The
 mean forecasts with error bands are plotted below
 ```{r S1forecastplots, echo=FALSE}
-autoplot(forecast(AAV1, h = 140), main = "Forecast for V1")
-autoplot(forecast(AAV2l, h = 140, lambda = AAV2l$lambda[[1]], biasadj = TRUE),
-     main = "Forecast for V2")
+autoplot(forecast(AAV1, h = 140)) + ylab("V1")
+autoplot(forecast(AAV2l, h = 140, lambda = AAV2l$lambda[[1]], biasadj = TRUE)) +
+  ylab("V2")
 ```
 
 ## Series 3
@@ -488,7 +488,7 @@ will be used to forecast Variable 02 for Series 01.
 ## Series 3
 ### Missing Value Imputation
 Below is the code used to linearly impute the missing values.
-```{r s3NA, include = T}
+```{r s3NA, include = T, echo=TRUE}
 sum(is.na(S3))
 
 sum(is.na(S3[,1]))
