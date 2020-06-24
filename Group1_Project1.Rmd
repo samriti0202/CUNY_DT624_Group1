@@ -1,12 +1,16 @@
 ---
 title: "CUNY DT 624"
-subtitle: "Project 1"
-author: "Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan"
+author: 'Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan'
 date: "Summer 2020"
 output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '4'
   word_document:
-    toc: true
+    toc: yes
     toc_depth: 4
+subtitle: Project 1
 ---
 
 ```{r setup, include=FALSE}
@@ -228,6 +232,91 @@ arima_s3v2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 The ARIMA model has an error of 3630, the lowest of the 3 models. All 3 models
 make very similar looking positions so we will select the ARIMA model as it has
 the lowest error across the validation period.
+
+
+
+## Series 4
+
+### Series Visualization
+
+```{r echo=FALSE}
+S4ts <- ts(S04[-futureobs, 3:4])
+plot(S4ts)
+```
+
+The graphs above show both series plotted next to each other. According to the graphs, the series look quite different from each other. The first series appears to be gradually increasing upward as time increases and then begins to trend downward after a certain point. This series is not stationary, so some differencing will be used to create a stationary series. Beyond the non-stationarity, there does not seem to be any unusual values in the first series.
+
+The second series appears to be stationary with many large spikes at somewhat random intervals. These large spikes will most likely have an effect on the forecasting and should be adjusted for more accurate predictions.
+
+```{r echo=FALSE, fig.width=8L, fig.height=6L}
+V1 <- scale(S04$Var01[-futureobs])
+V2 <- scale(S04$Var02[-futureobs])
+plot(V2, type = 'l', col = 'green4', main = "Series 01 Variables",
+     xlab = "Time", ylab = "Scaled Values", ylim = c(-2, 8))
+lines(V1, col = 'blue')
+legend('topright', legend = c('V1', 'V2'), col = c('blue', 'green4'), lty = 1L)
+```
+
+The graph above shows both series overlayed. There does not appear to be an obvious correlation or pattern between these two series.
+
+
+### Data Transformation
+
+#### Missing Values
+
+The first series exhibits a couple missing values. The `na.interp` times series interpolation function replaces the missing values with numbers that match the pattern of the overall series.
+
+The second series had no missing values.
+
+#### Outliers
+
+The first series exhibited a few outliers, but they were not significant enough to warrant replacement; so no outlier transformations were performed.
+
+The second series exhibited many outliers that were quite extreme. These outliers were replaced with more reasonable values using the `tsclean` function.
+
+#### Variance Stabilization
+
+Both series did not exhibit a changes in variance, so a Box-Cox transformation was deemed unnecessary.
+
+#### Stationarity
+
+A first order difference was applied to both series to induce stationarity. The differencing significantly improved the stationarity for both series to a satifactory level so no further differencing was applied.
+
+#### Seasonality
+
+After differencing both series, neither series exhibited seasonality.
+
+```{r include=FALSE}
+sum(is.na(S4ts[,1])) # 2 missing values
+sum(is.na(S4ts[,2])) # no missing values
+
+S4V1 = na.interp(S4ts[,1]) #interpolate missing values
+S4V1_outliers = tsoutliers(S4V1) #identify outliers
+
+S4V2 = S4ts[,2]
+S4V2_outliers = tsoutliers(S4V2) #identify outliers
+S4V2_clean = tsclean(S4V2) #replace outliers with more reasonable values
+```
+
+```{r include=FALSE}
+S4V1_autoarima = auto.arima(S4V1, ic = 'aicc', stepwise = F, approximation = F, allowdrift = F, seasonal = F, parallel = T)
+S4V1_boxed_autoarima = auto.arima(S4V1, ic = 'aicc', stepwise = F, approximation = F, allowdrift = F, seasonal = F, parallel = T, lambda = 'auto')
+
+S4V2_autoarima = auto.arima(S4V2, ic = 'aicc', stepwise = F, approximation = F, allowdrift = F, seasonal = F, parallel = T)
+S4V2_outliers_autoarima = auto.arima(S4V2_clean, ic = 'aicc', stepwise = F, approximation = F, allowdrift = F, seasonal = F, parallel = T)
+S4V2_boxed_autoarima = auto.arima(S4V2, ic = 'aicc', stepwise = F, approximation = F, allowdrift = F, seasonal = F, parallel = T, lambda = 'auto')
+S4V2_boxed_outliers_autoarima = auto.arima(S4V2_clean, ic = 'aicc', stepwise = F, approximation = F, allowdrift = F, seasonal = F, parallel = T, lambda = 'auto')
+```
+
+### Forecasting
+
+The forecast for both series can be seen below.
+
+```{r, echo=FALSE}
+plot(forecast(S4V1_boxed_autoarima, h = 140), main = "Forecast for V1")
+plot(forecast(S4V2_boxed_outliers_autoarima, h = 140, biasadj = TRUE), main = "Forecast for V2")
+```
+
 
 # Analytical Appendix
 ## Data Preprocessing
@@ -592,6 +681,152 @@ smoothing model does not pass  the Ljung-Box test with a p-value of .03,
 indicating that some of the residuals from the exponential smoothing model may
 be correlated and that the model could be improved. As such, this further
 confirms our decision to use the ARIMA model for this series.
+
+
+## Series 4
+
+### S4V1
+
+#### Outlier Replacement
+
+```{r}
+#outliers do not look significant enough to be replaced
+
+plot(S4V1, main = "Outliers for V1", ylab = "V1")
+points(S4V1_outliers$index, S4V1_outliers$replacements, col = 'red', pch = 16L)
+points(S4V1_outliers$index, S4V1[S4V1_outliers$index], col = 'blue', pch = 16L)
+legend('topleft', c("Outlier", "Replacement"), pch = 16L,
+       col = c('blue', 'red'))
+```
+
+The plot above shows the outliers for the first series in blue and their replacements in red. There does not appear to be a significant difference between the outliers and the replacements given how close they are to each other. As a result, we did not choose to use the replacements for the first series.
+
+#### Stationarity
+
+```{r}
+#nonstationary
+
+ggAcf(S4V1, type = 'correlation') + ggtitle("V1 Autocorrelation")
+```
+
+The ACF plot of the first series above shows a very clear indication of autocorrelation due to significant spikes across the board for every lag. As further evidence, we conducted a KPSS Unit Root Test on both the standard series and a first order difference of the series to see if differencing would improve the stationarity. According to the tests, differencing appears to improve the stationarity significantly as seen by the value of the test statistic falling under the 1 percent critical value.
+
+```{r}
+#one lag is good enough because test statistic falls below 1 percent critical value
+
+summary(ur.kpss(S4V1))
+summary(ur.kpss(diff(S4V1)))
+```
+
+After taking the first difference, we can see a significant improvement in the stationarity as shown in the lag plots below. None of the lags appear to exhibit a linear pattern, which means that the data is more stationary now.
+
+```{r}
+#after differencing, autocorrelation is gone as seen by random pattern
+gglagplot(diff(S4V1), set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 1")
+```
+
+#### Picking ARIMA Parameters
+
+Looking at the ACF and PACF plots, we can see that there is not a clear indication that an AR or MA model should be used. The only root that is statistically significant is at lag 17 for both plots, but even then, it is not significant by a large margin. Also, there appears to be increasing variance as time increases, which indicates that a Box-Cox transformation may be necessary.
+
+At this point, the candidate model appears to be a Box-Cox transformed ARIMA(0,1,0) model.
+
+```{r}
+#lag at 17 may indicate something
+ggtsdisplay(diff(S4V1))
+```
+
+#### Residuals
+
+After fitting the model, we found that an ARIMA(0,1,1) model had a lower AICc compared to the ARIMA(0,1,0) model. This ARIMA(0,1,1) model exhibited good residuals with no discernable pattern, constant variance, and a normal distribution. In other words, the residuals appear to be Gaussian Noise.
+
+```{r}
+#residuals looking good. no discernable patterns, gaussian noise.
+checkresiduals(S4V1_boxed_autoarima)
+```
+
+### S4V2
+
+#### Outlier Replacement
+
+The plot below shows the outliers for the second series in blue and their replacements in red. As we can see, there are many outliers in this series and that their replacements are much more reasonable values. For this series, replacing the outliers would create better forecasts.
+
+```{r}
+#there are many outliers that need to be replaced
+
+plot(S4V2, main = "Outliers for V2", ylab = "V2")
+points(S4V2_outliers$index, S4V2_outliers$replacements, col = 'red', pch = 16L)
+points(S4V2_outliers$index, S4V2[S4V2_outliers$index], col = 'blue', pch = 16L)
+legend('topleft', c("Outlier", "Replacement"), pch = 16L,
+       col = c('blue', 'red'))
+```
+
+#### Stationarity
+
+According to the ACF plot below, the data exhibits very clear non-stationarity due to the spikes across all lags. Differencing will be necessary to make the series stationary.
+
+```{r}
+#nonstationary
+
+ggAcf(S4V2_clean, type = 'correlation') + ggtitle("V2 Autocorrelation")
+```
+
+Using a KPSS Unit Root Test, we show that one degree of differencing is sufficient for creating a stationary series. The value of the test statistic falls below the critical value at 1 percent, which indicates that the series is stationary.
+
+```{r}
+#one lag is good enough because test statistic falls below 1 percent critical value
+
+summary(ur.kpss(S4V2_clean))
+summary(ur.kpss(diff(S4V2_clean)))
+```
+
+The lag plot below further reinforces the idea that the once differenced series is stationary given that there is no linear pattern for any lag.
+
+
+```{r}
+#lags look more random now after differencing
+gglagplot(diff(S4V2_clean),
+          set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 2") +
+  scale_x_continuous(breaks = breaks_extended(n = 3L),
+                     labels = label_scientific(digits = 1L)) 
+```
+
+#### Picking ARIMA Parameters
+
+The ACF graph shows two spikes at lag 1 and lag 2. This would suggest that an ARIMA(p,1,2) model would be appropriate for this series. The PACF graph shows spikes from lag 1 to lag 9. This would suggest that `q` could be any value between 3 and 9. Though, most likely, a value of 3 or 4 would be sufficient for the AR component of this model.
+
+The variance appears to be constant, however, the large spikes in the first half might indicate that a Box-Cox transformation could improve the model.
+
+Given that there are many moving parts for this series, we decided to use the `auto.arima` function to fit a variety of different models at various `p` and `q` values with and without a Box-Cox transformation.
+
+```{r}
+#PACF would suggest an ARIMA(3,1,q) or ARIMA(4,1,q) model
+#ACF would suggest an ARIMA(p,1,1) or ARIMA(p,1,2) model
+
+ggtsdisplay(diff(S4V2_clean))
+```
+
+#### Roots Analysis
+
+The characteristic roots for our best model are pretty good overall given that most of the roots are not close to the unit circle. However, there is one MA root that is close to the circle, which could indicate that the forecast may not be as accurate as we hope.
+
+```{r}
+# AR roots look fine, MA root is too close to the unit circle, which indicates that the model might not be good for forecasting
+autoplot(S4V2_boxed_outliers_autoarima)
+```
+
+#### Residuals
+
+After running the `auto.arima` function, we found that an ARIMA(3,1,1) model with smoothed outliers and a Box-Cox transformation gave the best looking results. As seen in the residual plots below, the variance of the noise is constant, there is no indication of autocorrelation of the residuals, and the residuals are normally distributed. All these factors would indicate that the resdiuals are white noise.
+
+```{r}
+#the outlier replacement model appears to be the best compared to the other models
+
+checkresiduals(S4V2_boxed_outliers_autoarima)
+```
+
 
 # References
  * Hyndman, R.J., & Athanasopoulos, G. (2018)
