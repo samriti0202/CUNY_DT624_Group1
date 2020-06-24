@@ -1,16 +1,12 @@
 ---
 title: "CUNY DT 624"
+subtitle: Project 1
 author: 'Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan'
 date: "Summer 2020"
 output:
-  html_document:
-    df_print: paged
-    toc: yes
-    toc_depth: '4'
   word_document:
     toc: yes
     toc_depth: 4
-subtitle: Project 1
 ---
 
 ```{r setup, include=FALSE}
