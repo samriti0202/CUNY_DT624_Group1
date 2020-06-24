@@ -52,7 +52,7 @@ analysis may be found in the **analytical appendix** for those interested in
 the findings and decisions applied.
 
 # Executive Summary
-## Series 01
+## Series 1
 ### Observations
 Variables 01 and 02 (V1 & V2 from now on) of Series 01 (S1 from now on) can each
 be considered a time series. As few transformations as possible will be applied
