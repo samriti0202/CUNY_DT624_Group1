@@ -75,8 +75,6 @@ legend('topright', legend = c('V1', 'V2'), col = c('blue', 'green4'), lty = 1L)
 ```
 ```{r SeriesFitting, include=FALSE}
 S1V1 <- na.interp(S1ts[, 1])
-S1V1w <- window(S1V1, 1, 1000)
-S1V1wp <- window(S1V1, 1001)
 S1V2 <- S1ts[, 2]
 V1O <- tsoutliers(S1V1)
 V2O <- tsoutliers(S1V2)
@@ -230,7 +228,6 @@ make very similar looking positions so we will select the ARIMA model as it has
 the lowest error across the validation period.
 
 ## Series 4
-
 ### Series Visualization
 
 ```{r echo=FALSE}
@@ -264,7 +261,6 @@ obvious correlation or pattern between these two series.
 
 ### Data Transformation
 #### Missing Values
-
 The first series exhibits a couple missing values. The `na.interp` times series
 interpolation function replaces the missing values with numbers that match the
 pattern of the overall series.
@@ -325,8 +321,7 @@ S4V2_boxed_outliers_autoarima = auto.arima(S4V2_clean, ic = 'aicc',
                                            parallel = T, lambda = 'auto')
 ```
 
-### Forecasting
-
+#### Forecasting
 The forecast for both series can be seen below.
 
 ```{r, echo=FALSE}
@@ -335,7 +330,67 @@ plot(forecast(S4V2_boxed_outliers_autoarima, h = 140, biasadj = TRUE),
      main = "Forecast for V2")
 ```
 
+## Series 5
+### Observations
+Variables 02 and 03 (V2 & V3 from now on) of Series 05 (S5 from now on) can each
+be considered a time series. As few transformations as possible will be applied
+to the data to maximize fidelity to the original source.
+```{r S1ts, echo=FALSE}
+S5ts <- ts(S05[-futureobs, 4:5])
+plot(S5ts)
+```
 
+There is no immediately apparent relationship between V2 and V3. Both seem to
+be without drift. V1, in particular, looks very much like a random walk at first
+glance. This remains the case when they are plotted after center-scaling and
+normalization. V2 does exhibit some extreme variability and may be a candidate
+for Box-Cox transformation.
+```{r S1scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
+V2 <- scale(S05$Var02[-futureobs])
+V3 <- scale(S05$Var03[-futureobs])
+plot(V2, type = 'l', col = 'green4', main = "Series 01 Variables",
+     xlab = "Time", ylab = "Scaled Values", ylim = c(-3, 12))
+lines(V3, col = 'blue')
+legend('topright', legend = c('V3', 'V2'), col = c('blue', 'green4'), lty = 1L)
+```
+```{r SeriesFitting, include=FALSE}
+S5V2missing <- which(is.na(S5ts[, 1]))
+S5V2med <- median(S5ts[, 1], na.rm = TRUE)
+S5V3missing <- which(is.na(S5ts[, 2]))
+S5V3med <- median(S5ts[, 2], na.rm = TRUE)
+S5V2 <- na.interp(S5ts[, 1])
+S5V3 <- na.interp(S5ts[, 2])
+S1V2 <- S1ts[, 2]
+V2O <- tsoutliers(S5V2)
+V3O <- tsoutliers(S5V3)
+S5V2c <- tsclean(S5V2)
+AAS5V2 <- auto.arima(S5V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, seasonal = FALSE, parallel = TRUE)
+AAS5V3 <- auto.arima(S5V3, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, seasonal = FALSE, parallel = TRUE)
+V2p <- AAS5V2$arma[[1]]
+V2q <- AAS5V2$arma[[2]]
+V2d <- AAS5V2$arma[[5]]
+V3p <- AAS5V3$arma[[1]]
+V3q <- AAS5V3$arma[[2]]
+V3d <- AAS5V3$arma[[5]]
+AAS5V2l <- auto.arima(S5V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, seasonal = FALSE, parallel = TRUE,
+                   lambda = 'auto', biasadj = TRUE)
+AAS5V3l <- auto.arima(S5V3, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                   approximation = FALSE, seasonal = FALSE, parallel = TRUE,
+                   lambda = 'auto', biasadj = TRUE)
+V2lp <- AAS5V2l$arma[[1]]
+V2lq <- AAS5V2l$arma[[2]]
+V2ld <- AAS5V2l$arma[[5]]
+V3lp <- AAS5V3l$arma[[1]]
+V3lq <- AAS5V3l$arma[[2]]
+V3ld <- AAS5V3l$arma[[5]]
+ETSS5V2 <- ets(S5V2, model = 'ZZZ', ic = 'aicc')
+ETSS5V2l <- ets(S5V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRUE)
+ETSS5V3 <- ets(S5V3, model = 'ZZZ', ic = 'aicc')
+ETSS5V3l <- ets(S5V3, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRUE)
+```
 # Analytical Appendix
 ## Data Preprocessing
 The data was converted to CSV, read into R, and then split into separate files
@@ -888,6 +943,239 @@ resdiuals are white noise.
 
 checkresiduals(S4V2_boxed_outliers_autoarima)
 ```
+
+## Series 05
+FIXFIXFIXFIXFIXFIX
+### Variable 02
+#### Missing Data
+With no apparent seasonality, the missing 2 variables for out of 1662 values for
+V1 were replaced by linear interpolation.
+
+#### Outliers
+For V1, five points were identified as outliers using the `tsoutliers` function
+in the `forecast` package.
+```{r, S1V1Out}
+plot(S1V1, main = "Outliers for V1", ylab = "V1")
+points(V1O$index, V1O$replacements, col = 'red', pch = 16L)
+points(V1O$index, S1V1[V1O$index], col = 'blue', pch = 16L)
+legend('topleft', c("Outlier", "Replacement"), pch = 16L,
+       col = c('blue', 'red'))
+```
+
+As seen in the plot above, the blue points are the actual values and the maroon
+points are the suggested replacements. The outliers and their replacements are
+not deemed different enough to substitute interpolated data for real.
+
+#### Stationarity
+It is clear that there is non-stationarity in V1 when looking at autocorrelation
+plots.
+
+```{r S1V1acf, echo=FALSE, fig.width=10L}
+ggAcf(S1V1, type = 'correlation') + ggtitle("V1 Autocorrelation")
+```
+
+The autocorrelation plot shows slowly decreasing but continually positive
+values, a clear sign of the existence of non-stationarity. Using the
+*Kwiatkowski-Phillips-Schmidt-Shin* test as suggested by the text implies that a
+difference of one lag will be sufficient, as the test statistic falls below the
+critical values for any sane level of confidence after
+a difference of one lag.
+
+```{r S1V1station, echo=TRUE}
+summary(ur.kpss(S1V1))
+summary(ur.kpss(diff(S1V1)))
+```
+
+#### Seasonality
+Once differenced, there is no apparent seasonality at any reasonable lag value.
+```{r S1V1lagplots, echo=FALSE, fig.width=10L}
+gglagplot(diff(S1V1), set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 1")
+```
+
+#### ARIMA parameters
+Below are auto and partial autocorrelation plots for of the differenced values
+of V1.
+```{r S1V1aP, echo=FALSE, fig.width=10L}
+ggtsdisplay(diff(S1V1))
+```
+
+The positive ACF lag 1 with cutoff after lag 2 implies that V1 will require a MA
+component of at least 2. It's more difficult to immediately identify an AR
+component, so an exhaustive search using `auto.arima` will be performed on a
+set of \(ARIMA(p, 1, q)\) models, using AICc as our goodness-of-fit measure.
+While \(d\) has been robustly estimated as 1, it too will be left blank for use
+in the automatic trial-and-error fitting procedures. Lastly, as the entirety of
+V1 demonstrates a clear upward trend, fitting will be with drift allowed.
+
+For V1, the best model using maximum likelihood is estimated as an
+ARIMA(`r V1p`, `r V1d`, `r V1q`). However, looking at the characteristic roots
+gives some pause as the majority of its roots lie near the boundary of the unit
+circle. This is despite the author's claim:
+"*The `auto.arima()` function is even stricter, and will not select a model*
+*with roots close to the unit circle*"
+([Section 8.7](https://otexts.com/fpp2/arima-r.html),
+Hyndman & Athanasopoulos 2018).
+
+```{r S1V1unitC1}
+autoplot(AAV1)
+```
+
+A number of other models were investigated, but the ones which brought their
+roots well inside the circle suffered from severe deterioration in goodness of
+fit (Burnham \& Anderson 2012). Therefore, the original model is retained.
+
+The residuals for this model visually exhibit very little heteroskedasticity, 
+and are particularly Gaussian in nature.
+```{r S1V1resid, echo=FALSE, fig.width=10L, fig.height=8L}
+checkresiduals(AAV1)
+```
+
+#### Exponential Smoothing State Space
+An exponential smoothing state-space model was fit to the data as well and
+returned a `r ETSV1$method` model. The accuracy of the models are compared
+below, first the ARIMA model and then the ETS model.
+```{r V1wAcc}
+accuracy(AAV1)
+accuracy(ETSV1)
+```
+
+More importantly, since they are fit on the exact same data, their AICc may
+be compared. For the ARIMA model it is `r AAV1$aicc` and for the ETS model, it
+is `r ETSV1$aicc`. The choice is clear, that the ARIMA model is superior.
+
+#### Selection
+The ARIMA(`r V1p`, `r V1d`, `r V1q`) model will be used to forecast Variable 01
+for Series 01.
+
+### Variable 02
+#### Missing Data
+There are no missing values for V2.
+
+#### Outliers
+Using the same technique, there are `r length(V2O$index)` outliers identified
+for V2.
+```{r, S1V2aOut}
+plot(S1V2, main = "Outliers for V1", ylab = "V1")
+points(V2O$index, V2O$replacements, col = 'red', pch = 16L)
+points(V2O$index, S1V2[V2O$index], col = 'blue', pch = 16L)
+legend('topleft', c("Outlier", "Replacement"), pch = 16L,
+       col = c('blue', 'red'))
+```
+
+In this case, the outliers are **clearly** extremes. Replacing the outliers with
+the suggestions would result in the series in black becoming the one in green.
+```{r, S2V2cOut}
+plot(S1V2)
+lines(S1V2c, col = 'green4')
+```
+
+Consideration was given throughout the process to replacing outliers, but
+doing so did not result in any significant improvement.
+
+#### Stationarity
+It is clear that there is non-stationarity in V2 when looking at autocorrelation
+plots.
+
+```{r S1V2acf, echo=FALSE, fig.width=10L}
+ggAcf(S1V2, type = 'correlation') + ggtitle("V2 Autocorrelation")
+```
+
+The same tests as performed on V1 indicate that a difference of one lag will be
+sufficient here as well.
+
+```{r S1V2station, echo=TRUE}
+summary(ur.kpss(S1V2))
+summary(ur.kpss(diff(S1V2)))
+```
+
+#### Seasonality
+Once differenced, there is no apparent seasonality at any reasonable lag value.
+```{r S1V2lagplots, echo=FALSE, fig.width=10L}
+gglagplot(diff(S1V2),
+          set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
+  ggtitle("Lag Plots for Differenced Variable 2") +
+  scale_x_continuous(breaks = breaks_extended(n = 3L),
+                     labels = label_scientific(digits = 1L)) 
+```
+
+#### ARIMA parameters
+Below are auto and partial autocorrelation plots for of the differenced values
+of V2.
+```{r S1V2aP, echo=FALSE, fig.width=10L}
+ggtsdisplay(diff(S1V2))
+```
+
+Here, there is certainly more uncertainty as to what parameters should be
+selected. Therefore, the best option is once again an exhaustive search.
+
+Using the same exhaustive technique as for V1, the best selected model for V2 is
+an ARIMA(`r V2p`, `r V2d`, `r V2q`) model. The autoregressive component for V2
+makes sense in the context of the partial autocorrelation plot above; the fourth
+partial autocorrelation is larger in magnitude than all that follow. 
+
+However, once again, the characteristic roots raise the specter of instability.
+```{r S1V2unitC1, echo=FALSE}
+autoplot(AAV2) + ggtitle("Inverse Roots for V2")
+```
+
+The residuals look poor as well.
+```{r S1V2Resid, echo=FALSE}
+checkresiduals(AAV2)
+```
+
+Similar to V1, multiple models were investigated including limiting the order of
+the ARIMA and replacing the outliers discussed above. However, any model which
+showed a meaningful improvement in its roots demonstrated a significant
+reduction in goodness of fit.
+
+#### Applying Box-Cox
+At this point, despite the initial reluctance to transform the raw data, it
+became prudent to investigate a Box-Cox transform. Similar to the cases above,
+the important findings and graphics are reprised below.
+
+The best model under order 20 for V2 transformed via Box-Cox (\(\lambda = \)
+`r AAV2l$lambda[[1]]`) is once again an ARIMA(`r V2lp`, `r V2ld`, `r V2lq`).
+It too cannot be directly compared to the earlier two models, as it is based on
+different data. Its characteristic roots are not much better than the original.
+
+```{r S1V2l_unitC2, echo=FALSE}
+autoplot(AAV2l)
+```
+
+However, its residuals show clear improvement.
+```{r S1V2lresid, echo=FALSE, fig.width=10L, fig.height=8L}
+checkresiduals(AAV2l)
+```
+
+#### Exponential Smoothing State Space
+An ETS model with and without Box-Cox was also fit. These returned an
+`r ETSV2$method` and `r ETSV2l$method` respectively. The accuracy and AICc are
+shown below in the following order: ARIMA without Box-Cox, ARIMA with Box-Cox,
+ETS without Box-Cox, and lastly ETS without Box-Cox.
+```{r ETSAcc, echo=FALSE}
+accuracy(AAV2)
+accuracy(AAV2l)
+accuracy(ETSV2)
+accuracy(ETSV2l)
+```
+
+The AICc values are also shown below for comparable models.
+```{r ETSAICc, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::kable(data.frame(Name = c('ARIMA', ETSV2$method),
+           AICc = c(AAV2$aicc, ETSV2$aicc)))
+
+knitr::kable(data.frame(Name = c('ARIMA+BoxCox', ETSV2l$method),
+           AICc = c(AAV2l$aicc, ETSV2l$aicc)))
+```
+
+In both cases, the ARIMA variants outperform their exponentially smoothed
+counterparts. Moreover, in comparable metrics (e.g. RMSE), the Box-Cox
+transformation shows better results (and better residuals).
+
+#### Selection
+The ARIMA(`r V2lp`, `r V2ld`, `r V2lq`) with lambda `r AAV2l$lambda[[1]]` model
+will be used to forecast Variable 02 for Series 01.
 
 
 # References
