@@ -297,7 +297,7 @@ was deemed unnecessary.
 
 A first order difference was applied to both series to induce stationarity. The
 differencing significantly improved the stationarity for both series to a
-satifactory level so no further differencing was applied.
+satisfactory level so no further differencing was applied.
 
 #### Seasonality
 
@@ -996,11 +996,11 @@ ggtsdisplay(diff(S4V1))
 #### Residuals
 After fitting the model, we found that an ARIMA(0,1,1) model had a lower AICc
 compared to the ARIMA(0,1,0) model. This ARIMA(0,1,1) model exhibited good
-residuals with no discernable pattern, constant variance, and a normal
+residuals with no discernible pattern, constant variance, and a normal
 distribution. In other words, the residuals appear to be Gaussian Noise.
 
 ```{r}
-#residuals looking good. no discernable patterns, gaussian noise.
+#residuals looking good. no discernible patterns, Gaussian noise.
 checkresiduals(S4V1_boxed_autoarima)
 ```
 
@@ -1097,7 +1097,7 @@ with smoothed outliers and a Box-Cox transformation gave the best looking
 results. As seen in the residual plots below, the variance of the noise is
 constant, there is no indication of autocorrelation of the residuals, and the
 residuals are normally distributed. All these factors would indicate that the
-resdiuals are white noise.
+residuals are white noise.
 
 ```{r}
 # The outlier replacement model appears to be the best compared to the other
@@ -1127,7 +1127,7 @@ As seen in the plot above, the blue points are the actual values and the red
 points are the suggested replacements. Making this quantity of significant
 changes is something to be avoided. It may be better to perform a transform on
 all the data, allowing the relationship between the points to be consistent
-under the transform, as opposed to making `r length(S5V2O$index)` indvidual
+under the transform, as opposed to making `r length(S5V2O$index)` individual
 changes.
 
 #### Stationarity
@@ -1239,8 +1239,8 @@ knitr::kable(aiccBCS5V2, digits = 3L, format = 'pandoc')
 
 It is clear that the ARIMA models outperform their state space equivalents for
 almost all statistics. When choosing between the ARIMA and ARIMA+BC models,
-most statistics, incluing the MAPE, point to the Box-Cox adjusted model. Thus,
-rhe ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`) model with
+most statistics, including the MAPE, point to the Box-Cox adjusted model. Thus,
+the ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`) model with
 \(\lambda=\)`r AAS5V2l$lambda[[1]]` will be used to forecast Series 05
 Variable 02, with the bias adjustment to recover the mean and not the median.
 
@@ -1311,7 +1311,7 @@ its characteristic roots are near the boundary, which is somewhat concerning.
 autoplot(AAS5V3) + ggtitle("Inverse Roots for Untransformed Series 5 V3")
 ```
 
-The residuals look goood, though.
+The residuals look good, though.
 ```{r S5V3Resid, echo=FALSE}
 checkresiduals(AAS5V3)
 ```
@@ -1319,14 +1319,14 @@ checkresiduals(AAS5V3)
 #### Applying Box-Cox
 The model was fit with the same exhaustive procedure using a Box-Cox adjustment
 with \(\lambda=\)`r S5V3lam`. Interestingly, the best-fitting model is a less
-parsimonius ARIMA(`r S5V3lp`, `r S5V3ld`, `r S5V3lq`). The added MA root is well
+parsimonious ARIMA(`r S5V3lp`, `r S5V3ld`, `r S5V3lq`). The added MA root is well
 within the circle, the others are similar to the untransformed model.
 
 ```{r S5V3l_unitC2, echo=FALSE}
 autoplot(AAS5V3l)
 ```
 
-Its residuals are eminentl acceptable as well.
+Its residuals are eminently acceptable as well.
 ```{r S5V3lresid, echo=FALSE, fig.width=10L, fig.height=8L}
 checkresiduals(AAS5V3l)
 ```
