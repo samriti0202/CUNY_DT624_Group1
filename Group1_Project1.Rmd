@@ -147,8 +147,7 @@ The data appear to have a strong trend but no clear seasonal pattern, which will
 aid us in our modeling in the future.
 
 ### Missing Values
-
-missing values were imputed linearly to create a smooth timeseries.
+Missing values were imputed linearly to create a smooth timeseries.
 
 ```{r s3NA-exec, echo=F, include=F}
 sum(is.na(S3))
@@ -190,7 +189,11 @@ s3v1 <- ts(s3v1, frequency = 365)
 s3v1 %>% stl(s.window = 'periodic') %>% autoplot()
 ```
 
-The data may have some seasonal aspect to it on the daily time frame. Since we are unsure how the data was collected and what it represents we cannot confirm this. We chose not to model with the seasonal aspect since the there is no correlation between the data and itself 365 timesteps ago, indicating that last year's data is not predictive of next years.
+The data may have some seasonal aspect to it on the daily time frame. Since we
+are unsure how the data was collected and what it represents we cannot confirm
+this. We chose not to model with the seasonal aspect since the there is no
+correlation between the data and itself 365 timesteps ago, indicating that last
+year's data is not predictive of next years.
 
 ### Exponential Smoothing model
 
@@ -351,7 +354,7 @@ plot(S5ts)
 ```
 
 There is no immediately apparent relationship between V2 and V3. Both seem to
-be without drift. V1, in particular, looks very much like a random walk at first
+be without drift. V3, in particular, looks very much like a random walk at first
 glance. This remains the case when they are plotted after center-scaling and
 normalization. V2 does exhibit some extreme variability and may be a candidate
 for Box-Cox transformation.
@@ -370,36 +373,36 @@ S5V3missing <- which(is.na(S5ts[, 2]))
 S5V3med <- median(S5ts[, 2], na.rm = TRUE)
 S5V2 <- na.interp(S5ts[, 1])
 S5V3 <- na.interp(S5ts[, 2])
-S1V2 <- S1ts[, 2]
-V2O <- tsoutliers(S5V2)
-V3O <- tsoutliers(S5V3)
-S5V2c <- tsclean(S5V2)
+S5V2O <- tsoutliers(S5V2)
+S5V3O <- tsoutliers(S5V3)
 AAS5V2 <- auto.arima(S5V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE)
 AAS5V3 <- auto.arima(S5V3, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE)
-V2p <- AAS5V2$arma[[1]]
-V2q <- AAS5V2$arma[[2]]
-V2d <- AAS5V2$arma[[5]]
-V3p <- AAS5V3$arma[[1]]
-V3q <- AAS5V3$arma[[2]]
-V3d <- AAS5V3$arma[[5]]
+S5V2p <- AAS5V2$arma[[1]]
+S5V2q <- AAS5V2$arma[[2]]
+S5V2d <- AAS5V2$arma[[5]]
+S5V3p <- AAS5V3$arma[[1]]
+S5V3q <- AAS5V3$arma[[2]]
+S5V3d <- AAS5V3$arma[[5]]
 AAS5V2l <- auto.arima(S5V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE,
                    lambda = 'auto', biasadj = TRUE)
 AAS5V3l <- auto.arima(S5V3, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE,
                    lambda = 'auto', biasadj = TRUE)
-V2lp <- AAS5V2l$arma[[1]]
-V2lq <- AAS5V2l$arma[[2]]
-V2ld <- AAS5V2l$arma[[5]]
-V3lp <- AAS5V3l$arma[[1]]
-V3lq <- AAS5V3l$arma[[2]]
-V3ld <- AAS5V3l$arma[[5]]
+S5V2lp <- AAS5V2l$arma[[1]]
+S5V2lq <- AAS5V2l$arma[[2]]
+S5V2ld <- AAS5V2l$arma[[5]]
+S5V3lp <- AAS5V3l$arma[[1]]
+S5V3lq <- AAS5V3l$arma[[2]]
+S5V3ld <- AAS5V3l$arma[[5]]
 ETSS5V2 <- ets(S5V2, model = 'ZZZ', ic = 'aicc')
-ETSS5V2l <- ets(S5V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRUE)
+ETSS5V2l <- ets(S5V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
+                biasadj = TRUE)
 ETSS5V3 <- ets(S5V3, model = 'ZZZ', ic = 'aicc')
-ETSS5V3l <- ets(S5V3, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRUE)
+ETSS5V3l <- ets(S5V3, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
+                biasadj = TRUE)
 ```
 
 ## Series 6
@@ -411,11 +414,14 @@ S6 <- ts(S06[-futureobs, 6:7])
 autoplot(S6) + ylab('Value') + xlab('Time') + ggtitle('Var05 vs Var07')
 ```
 
-Both series have an extremely clear outlier that will need to be adressed. Both series also appear to be almost 100% correlated. The data has a clear trend but no visibly clear seasonal pattern.
+Both series have an extremely clear outlier that will need to be addressed. Both
+series also appear to be almost 100% correlated. The data has a clear trend but
+no visibly clear seasonal pattern.
 
 ### Missing Values
 
-As per most other series, missing values were imputed linearly to maintain a consistent time series.
+As per most other series, missing values were imputed linearly to maintain a
+consistent time series.
 
 ```{r s6NA, echo=F, include=F}
 sum(is.na(S6))
@@ -430,7 +436,9 @@ sum(is.na(S6))
 
 ### Outliers
 
-Before doing any outlier analysis it is very clear that there is a large outlier that will need to be fixed in order to create stable predictions for this timeseries.
+Before doing any outlier analysis it is very clear that there is a large outlier
+that will need to be fixed in order to create stable predictions for this
+timeseries.
 
 Here we can see the repaired timeseries with outliers removed.
 
@@ -440,11 +448,13 @@ S6 <- ts(sapply(S6, tsclean))
 S6 %>% autoplot()
 ```
 
-We get a much better view of the time series as a whole, not obscured by the huge outlier.
+We get a much better view of the time series as a whole, not obscured by the
+huge outlier.
 
 ### Baseline Model
 
-Once again, since there is no clear seasonal component to the time series, we are choosing to use a simple random walk with drift model as a baseline.
+Once again, since there is no clear seasonal component to the time series, we
+are choosing to use a simple random walk with drift model as a baseline.
 
 ```{r S6DriftGraph}
 s6v5 <- S6[,1]
@@ -454,7 +464,8 @@ rwf(s6v5, h = 140, drift = T) %>% autoplot() + ylab('Var05')
 rwf(s6v7, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 ```
 
-The baseline model has an error of 486. This is not meaningful in and of itself but rather as a comparison to other models.
+The baseline model has an error of 486. This is not meaningful in and of itself
+but rather as a comparison to other models.
 
 ### Decomposition
 
@@ -464,7 +475,12 @@ s6v5 <- ts(s6v5, frequency = 365)
 s6v5 %>% stl(s.window = 'periodic') %>% autoplot()
 ```
 
-It is unclear what the correct time period for this data should be as we have no knowledge of what the data is modeling, so we have tested annual, quarterly, monthly, weekly, and daily seasonality to see if the data fits any of these models. Although there is some seasonal pattern on the daily timeframe, the data is not predictive of itself 1 year in advance so we will not model using seasonality.
+It is unclear what the correct time period for this data should be as we have no
+knowledge of what the data is modeling, so we have tested annual, quarterly,
+monthly, weekly, and daily seasonality to see if the data fits any of these
+models. Although there is some seasonal pattern on the daily timeframe, the data
+is not predictive of itself 1 year in advance so we will not model using
+seasonality.
 
 ### Exponential Smoothing
 
@@ -491,7 +507,9 @@ arima_s6v7 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 arima_s6v5
 ```
 
-The ARIMA model has an error of 482, slightly worse than the exponential smoothing model. It also has a higher level of complexity so it makes sense to select the simpler and more accurate model.
+The ARIMA model has an error of 482, slightly worse than the exponential
+smoothing model. It also has a higher level of complexity so it makes sense to
+select the simpler and more accurate model.
 
 # Analytical Appendix
 ## Data Preprocessing
@@ -830,7 +848,8 @@ Pacf(s3v1, 370)
 
 The decreasing ACF values coupled with the large spike in the PACF values at 1
 is indicative of an AR(1) model, leading us to believe that the best ARIMA model
-would be an ARIMA(1,1,0) model. Also, the PACF values discount the daily seasonality we found as there is no spike in the PACF graph near 365.
+would be an ARIMA(1,1,0) model. Also, the PACF values discount the daily
+seasonality we found as there is no spike in the PACF graph near 365.
 
 ### ARIMA Error
 ```{r S3ARIMA_2, echo=TRUE}
@@ -858,9 +877,7 @@ confirms our decision to use the ARIMA model for this series.
 
 
 ## Series 4
-
 ### S4V1
-
 #### Outlier Replacement
 
 ```{r}
@@ -896,7 +913,8 @@ improve the stationarity significantly as seen by the value of the test
 statistic falling under the 1 percent critical value.
 
 ```{r}
-#one lag is good enough because test statistic falls below 1 percent critical value
+# One lag is good enough because test statistic falls below the 1 percent
+# critical value
 
 summary(ur.kpss(S4V1))
 summary(ur.kpss(diff(S4V1)))
@@ -913,7 +931,6 @@ gglagplot(diff(S4V1), set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
 ```
 
 #### Picking ARIMA Parameters
-
 Looking at the ACF and PACF plots, we can see that there is not a clear
 indication that an AR or MA model should be used. The only root that is
 statistically significant is at lag 17 for both plots, but even then, it is not
@@ -929,7 +946,6 @@ ggtsdisplay(diff(S4V1))
 ```
 
 #### Residuals
-
 After fitting the model, we found that an ARIMA(0,1,1) model had a lower AICc
 compared to the ARIMA(0,1,0) model. This ARIMA(0,1,1) model exhibited good
 residuals with no discernable pattern, constant variance, and a normal
@@ -941,7 +957,6 @@ checkresiduals(S4V1_boxed_autoarima)
 ```
 
 ### S4V2
-
 #### Outlier Replacement
 
 The plot below shows the outliers for the second series in blue and their
@@ -960,7 +975,6 @@ legend('topleft', c("Outlier", "Replacement"), pch = 16L,
 ```
 
 #### Stationarity
-
 According to the ACF plot below, the data exhibits very clear non-stationarity
 due to the spikes across all lags. Differencing will be necessary to make the
 series stationary.
@@ -977,7 +991,8 @@ falls below the critical value at 1 percent, which indicates that the series is
 stationary.
 
 ```{r}
-#one lag is good enough because test statistic falls below 1 percent critical value
+# One lag is good enough because test statistic falls below the 1 percent
+# critical value
 
 summary(ur.kpss(S4V2_clean))
 summary(ur.kpss(diff(S4V2_clean)))
@@ -985,7 +1000,6 @@ summary(ur.kpss(diff(S4V2_clean)))
 
 The lag plot below further reinforces the idea that the once differenced series
 is stationary given that there is no linear pattern for any lag.
-
 
 ```{r}
 #lags look more random now after differencing
@@ -997,7 +1011,6 @@ gglagplot(diff(S4V2_clean),
 ```
 
 #### Picking ARIMA Parameters
-
 The ACF graph shows two spikes at lag 1 and lag 2. This would suggest that an
 ARIMA(p,1,2) model would be appropriate for this series. The PACF graph shows
 spikes from lag 1 to lag 9. This would suggest that `q` could be any value
@@ -1019,19 +1032,18 @@ ggtsdisplay(diff(S4V2_clean))
 ```
 
 #### Roots Analysis
-
 The characteristic roots for our best model are pretty good overall given that
 most of the roots are not close to the unit circle. However, there is one MA
 root that is close to the circle, which could indicate that the forecast may not
 be as accurate as we hope.
 
 ```{r}
-# AR roots look fine, MA root is too close to the unit circle, which indicates that the model might not be good for forecasting
+# AR roots look fine, MA root is too close to the unit circle, which indicates
+# that the model might not be good for forecasting
 autoplot(S4V2_boxed_outliers_autoarima)
 ```
 
 #### Residuals
-
 After running the `auto.arima` function, we found that an ARIMA(3,1,1) model
 with smoothed outliers and a Box-Cox transformation gave the best looking
 results. As seen in the residual plots below, the variance of the noise is
@@ -1040,13 +1052,13 @@ residuals are normally distributed. All these factors would indicate that the
 resdiuals are white noise.
 
 ```{r}
-#the outlier replacement model appears to be the best compared to the other models
+# The outlier replacement model appears to be the best compared to the other
+# models
 
 checkresiduals(S4V2_boxed_outliers_autoarima)
 ```
 
 ## Series 05
-FIXFIXFIXFIXFIXFIX
 ### Variable 02
 #### Missing Data
 With no apparent seasonality, the missing 2 variables for out of 1662 values for
@@ -1279,10 +1291,9 @@ The ARIMA(`r V2lp`, `r V2ld`, `r V2lq`) with lambda `r AAV2l$lambda[[1]]` model
 will be used to forecast Variable 02 for Series 01.
 
 ## Series 6
-
 ### Missing Value Imputation
-
-Below is the code for imputing the missing values. Missing values are imputed linearly as an average between the last two known values.
+Below is the code for imputing the missing values. Missing values are imputed
+linearly as an average between the last two known values.
 
 ```{r s6NA-exec, echo=T, output = F}
 sum(is.na(S6))
@@ -1296,7 +1307,6 @@ sum(is.na(S6))
 ```
 
 ### Outliers
-
 Here is the code used to clean the outlier.
 
 ```{r}
@@ -1314,8 +1324,9 @@ data.frame(S6_orig) %>% ggplot() +
 ```
 
 ### Calculating Error
-
-Error is calculated using hold one out validation where a model is build on all previous data and then forecasts the next point. Error statistic reported is the sum of squared errors across all data points.
+Error is calculated using hold one out validation where a model is build on all
+previous data and then forecasts the next point. Error statistic reported is the
+sum of squared errors across all data points.
 
 ### Drift Model Error
 
@@ -1356,7 +1367,10 @@ Pacf(s6v5, 20)
 Pacf(s6v5, 370)
 ```
 
-The spike in the PACF at 2 may indicate an AR component of 2 in the ARIMA model. There also seems to be some alternating nature to the PACF graph with small spikes at 4 and 6, which may indicate an oscillating nature to the data which would be well modeled by an MA 2 component.
+The spike in the PACF at 2 may indicate an AR component of 2 in the ARIMA model.
+There also seems to be some alternating nature to the PACF graph with small
+spikes at 4 and 6, which may indicate an oscillating nature to the data which
+would be well modeled by an MA 2 component.
 
 The data needs a single differencing to become a stationary series.
 
@@ -1380,9 +1394,11 @@ checkresiduals(arima_s6v5)
 checkresiduals(ets_s6v5)
 ```
 
-The residuals confirm our suspicions: The exponential smoothing model is likely a better fit as the residuals from the ARIMA have a significant level of correlation with each other, meaning the ARIMA model has not fully modeled the data. The exponential smoothing model however has non correlated residuals and is therefore the better model choice.
->>>>>>> master
-
+The residuals confirm our suspicions: The exponential smoothing model is likely
+a better fit as the residuals from the ARIMA have a significant level of
+correlation with each other, meaning the ARIMA model has not fully modeled the
+data. The exponential smoothing model however has non correlated residuals and
+is therefore the better model choice.
 
 # References
  * Hyndman, R.J., & Athanasopoulos, G. (2018)
