@@ -29,12 +29,12 @@ Submitted: :heavy_check_mark:
 ### Project 1: Due 6/27/2020
 |Task|Student|Completed|
 |----|-------|:-------:|
-|S01|Avraham Adler||
+|S01|Avraham Adler|:heavy_check_mark:|
 |S02|Vishal Arora||
-|S03|Sam Bellows||
-|S04|Austin Chan||
-|S05|||
-|S06|||
+|S03|Sam Bellows|:heavy_check_mark:|
+|S04|Austin Chan|:heavy_check_mark:|
+|S05|Avraham Adler|:heavy_check_mark:|
+|S06|Sam Bellows|:heavy_check_mark:|
 |Compilation|Group||
 |Summary|Group||
 
