@@ -182,6 +182,16 @@ rwf(s3v2, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 The cumulative error for our baseline model is 3700, which is meaningless in and
 of itself but will be an excellent comparison point for other models.
 
+### Decomposition
+
+```{r}
+s3v1 <- ts(s3v1, frequency = 365)
+
+s3v1 %>% stl(s.window = 'periodic') %>% autoplot()
+```
+
+The data may have some seasonal aspect to it on the daily time frame. Since we are unsure how the data was collected and what it represents we cannot confirm this. We chose not to model with the seasonal aspect since the there is no correlation between the data and itself 365 timesteps ago, indicating that last year's data is not predictive of next years.
+
 ### Exponential Smoothing model
 
 Due the the nature of the data, a linear trend model is a natural choice as an
@@ -391,6 +401,98 @@ ETSS5V2l <- ets(S5V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRU
 ETSS5V3 <- ets(S5V3, model = 'ZZZ', ic = 'aicc')
 ETSS5V3l <- ets(S5V3, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRUE)
 ```
+
+## Series 6
+
+### Series Visualization
+
+```{r}
+S6 <- ts(S06[-futureobs, 6:7])
+autoplot(S6) + ylab('Value') + xlab('Time') + ggtitle('Var05 vs Var07')
+```
+
+Both series have an extremely clear outlier that will need to be adressed. Both series also appear to be almost 100% correlated. The data has a clear trend but no visibly clear seasonal pattern.
+
+### Missing Values
+
+As per most other series, missing values were imputed linearly to maintain a consistent time series.
+
+```{r s6NA, echo=F, include=F}
+sum(is.na(S6))
+
+sum(is.na(S6[,1]))
+sum(is.na(S6[,2]))
+
+S6 <- ts(sapply(S6, function(X) approxfun(seq_along(X), X)(seq_along(X))))
+
+sum(is.na(S6))
+```
+
+### Outliers
+
+Before doing any outlier analysis it is very clear that there is a large outlier that will need to be fixed in order to create stable predictions for this timeseries.
+
+Here we can see the repaired timeseries with outliers removed.
+
+```{r}
+S6_orig <- S6
+S6 <- ts(sapply(S6, tsclean))
+S6 %>% autoplot()
+```
+
+We get a much better view of the time series as a whole, not obscured by the huge outlier.
+
+### Baseline Model
+
+Once again, since there is no clear seasonal component to the time series, we are choosing to use a simple random walk with drift model as a baseline.
+
+```{r S6DriftGraph}
+s6v5 <- S6[,1]
+s6v7 <- S6[,2]
+
+rwf(s6v5, h = 140, drift = T) %>% autoplot() + ylab('Var05')
+rwf(s6v7, h = 140, drift = T) %>% autoplot() + ylab('Var07')
+```
+
+The baseline model has an error of 486. This is not meaningful in and of itself but rather as a comparison to other models.
+
+### Decomposition
+
+```{r S6Decomposition}
+s6v5 <- ts(s6v5, frequency = 365)
+
+s6v5 %>% stl(s.window = 'periodic') %>% autoplot()
+```
+
+It is unclear what the correct time period for this data should be as we have no knowledge of what the data is modeling, so we have tested annual, quarterly, monthly, weekly, and daily seasonality to see if the data fits any of these models. Although there is some seasonal pattern on the daily timeframe, the data is not predictive of itself 1 year in advance so we will not model using seasonality.
+
+### Exponential Smoothing
+
+```{r, echo = F}
+ets_s6v5 <- ets(s6v5, model = 'AAN', damped = F)
+ets_s6v5 %>% forecast(h = 140) %>% autoplot() + ylab('Var05')
+
+ets_s6v7 <- ets(s6v7, model = 'AAN', damped = F)
+ets_s6v7 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
+```
+
+This model has an error of 481, slightly lower than the baseline.
+
+### ARIMA Model
+
+```{r, echo = F}
+# data indicates an AR 1 model from ACF and PACF
+arima_s6v5 <- Arima(s6v5, order = c(2,1,2), include.drift = T)
+arima_s6v5 %>% forecast(h = 140) %>% autoplot() + ylab('Var05')
+
+arima_s6v7 <- Arima(s6v7, order = c(2,1,2), include.drift = T)
+arima_s6v7 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
+
+arima_s6v5
+```
+
+The ARIMA model has an error of 482, slightly worse than the exponential smoothing model. It also has a higher level of complexity so it makes sense to select the simpler and more accurate model.
+
 # Analytical Appendix
 ## Data Preprocessing
 The data was converted to CSV, read into R, and then split into separate files
@@ -723,13 +825,12 @@ kpss.test(diff(s3v1))
 
 diff(s3v1) %>% autoplot()
 acf(s3v1)
-Pacf(s3v1)
 Pacf(s3v1, 370)
 ```
 
 The decreasing ACF values coupled with the large spike in the PACF values at 1
 is indicative of an AR(1) model, leading us to believe that the best ARIMA model
-would be an ARIMA(1,1,0) model.
+would be an ARIMA(1,1,0) model. Also, the PACF values discount the daily seasonality we found as there is no spike in the PACF graph near 365.
 
 ### ARIMA Error
 ```{r S3ARIMA_2, echo=TRUE}
@@ -1176,6 +1277,111 @@ transformation shows better results (and better residuals).
 #### Selection
 The ARIMA(`r V2lp`, `r V2ld`, `r V2lq`) with lambda `r AAV2l$lambda[[1]]` model
 will be used to forecast Variable 02 for Series 01.
+
+## Series 6
+
+### Missing Value Imputation
+
+Below is the code for imputing the missing values. Missing values are imputed linearly as an average between the last two known values.
+
+```{r s6NA-exec, echo=T, output = F}
+sum(is.na(S6))
+
+sum(is.na(S6[,1]))
+sum(is.na(S6[,2]))
+
+S6 <- ts(sapply(S6, function(X) approxfun(seq_along(X), X)(seq_along(X))))
+
+sum(is.na(S6))
+```
+
+### Outliers
+
+Here is the code used to clean the outlier.
+
+```{r}
+s61out <- tsoutliers(S6_orig[,1])
+s62out <- tsoutliers(S6_orig[,2])
+
+data.frame(S6_orig) %>% ggplot() +
+  geom_line(aes(x = 1:length(S6_orig[,1]), y = Var05), color = 'green4') +
+  geom_point(data = data.frame(s61out), aes(x = index, y = replacements),
+             color = 'blue', size = 2) +
+  geom_point(aes(x = s61out$index, y = Var05[s61out$index]),
+             color = 'red', size = 2) +
+  xlab('Time') + ylab('Values') +
+  ggtitle('Var05 With Outlier and Replacement Shown')
+```
+
+### Calculating Error
+
+Error is calculated using hold one out validation where a model is build on all previous data and then forecasts the next point. Error statistic reported is the sum of squared errors across all data points.
+
+### Drift Model Error
+
+```{r S6DriftError, echo=TRUE}
+drift_sse_v1 <- 0
+for(i in 100:(length(s6v5)-1)){
+  pred <- rwf(s6v5[1:i], h = 1, drift = T)
+  error <- as.numeric(pred$mean) - s6v5[i+1]
+  drift_sse_v1 <- drift_sse_v1 + error**2
+}
+drift_sse_v1
+```
+
+### Exponential Smoothing Error
+
+```{r S6ExpSmthErr, echo=TRUE}
+ets_sse <- 0
+for(i in 100:(length(s6v5)-1)){
+  model <- ets(s6v5[1:i], model = 'AAN')
+  pred <- model %>% forecast(h = 1)
+  error <- as.numeric(pred$mean) - s6v5[i+1]
+  ets_sse <- ets_sse + error**2
+}
+ets_sse
+```
+
+### ARIMA Parameter Selection
+
+```{r S6ACFDiag}
+library(tseries)
+
+kpss.test(s6v5)
+kpss.test(diff(s6v5))
+
+diff(s6v5) %>% autoplot()
+acf(s6v5)
+Pacf(s6v5, 20)
+Pacf(s6v5, 370)
+```
+
+The spike in the PACF at 2 may indicate an AR component of 2 in the ARIMA model. There also seems to be some alternating nature to the PACF graph with small spikes at 4 and 6, which may indicate an oscillating nature to the data which would be well modeled by an MA 2 component.
+
+The data needs a single differencing to become a stationary series.
+
+### ARIMA Model Error
+
+```{r S6ARIMA_2, echo=TRUE}
+arima_sse <- 0
+for(i in 100:(length(s6v5)-1)){
+  model <- Arima(s6v5[1:i], order = c(2,1,2), method = 'CSS', include.drift = T)
+  pred <- model %>% forecast(h = 1)
+  error <- as.numeric(pred$mean) - s6v5[i+1]
+  arima_sse <- arima_sse + error**2
+}
+arima_sse
+```
+
+### Residuals
+
+```{r S6Residuals}
+checkresiduals(arima_s6v5)
+checkresiduals(ets_s6v5)
+```
+
+The residuals confirm our suspicions: The exponential smoothing model is likely a better fit as the residuals from the ARIMA have a significant level of correlation with each other, meaning the ARIMA model has not fully modeled the data. The exponential smoothing model however has non correlated residuals and is therefore the better model choice.
+>>>>>>> master
 
 
 # References
