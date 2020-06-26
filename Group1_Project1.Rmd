@@ -47,9 +47,10 @@ forecast the following series, each for 140 periods.
 The forecasts will be provided in a separate Excel document. The code for the
 analysis can be found in the attached R markdown document.
 
-The **executive summary** will contain the key findings. The more detailed
-analysis may be found in the **analytical appendix** for those interested in
-the findings and decisions applied.
+The **executive summary** will contain the model selections and forecasts. The
+detailed analysis may be found in the **analytical appendix** for those
+interested in the findings and decisions applied. The `R` code will be made
+available upon request.
 
 # Executive Summary
 ## Series 1
@@ -76,45 +77,30 @@ legend('topright', legend = c('V1', 'V2'), col = c('blue', 'green4'), lty = 1L)
 ```{r SeriesFitting, include=FALSE}
 S1V1 <- na.interp(S1ts[, 1])
 S1V2 <- S1ts[, 2]
-V1O <- tsoutliers(S1V1)
-V2O <- tsoutliers(S1V2)
+S1V1O <- tsoutliers(S1V1)
+S1V2O <- tsoutliers(S1V2)
 S1V2c <- tsclean(S1V2)
-AAV1 <- auto.arima(S1V1, max.order = 8L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, seasonal = FALSE, parallel = TRUE)
-AAV2 <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, seasonal = FALSE, parallel = TRUE)
-V1p <- AAV1$arma[[1]]
-V1q <- AAV1$arma[[2]]
-V1d <- AAV1$arma[[5]]
-V2p <- AAV2$arma[[1]]
-V2q <- AAV2$arma[[2]]
-V2d <- AAV2$arma[[5]]
-AAV2l <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
-                   approximation = FALSE, seasonal = FALSE, parallel = TRUE,
-                   lambda = 'auto', biasadj = TRUE)
-V2lp <- AAV2l$arma[[1]]
-V2lq <- AAV2l$arma[[2]]
-V2ld <- AAV2l$arma[[5]]
-ETSV1 <- ets(S1V1, model = 'ZZZ', ic = 'aicc')
-ETSV2 <- ets(S1V2, model = 'ZZZ', ic = 'aicc')
-ETSV2l <- ets(S1V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRUE)
+AAS1V1 <- auto.arima(S1V1, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                     approximation = FALSE, seasonal = FALSE, parallel = TRUE)
+AAS1V2 <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                     approximation = FALSE, seasonal = FALSE, parallel = TRUE)
+S1V1p <- AAS1V1$arma[[1]]
+S1V1q <- AAS1V1$arma[[2]]
+S1V1d <- AAS1V1$arma[[5]]
+S1V2p <- AAS1V2$arma[[1]]
+S1V2q <- AAS1V2$arma[[2]]
+S1V2d <- AAS1V2$arma[[5]]
+AAS1V2l <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                      approximation = FALSE, seasonal = FALSE, parallel = TRUE,
+                      lambda = 'auto', biasadj = TRUE)
+S1V2lp <- AAS1V2l$arma[[1]]
+S1V2lq <- AAS1V2l$arma[[2]]
+S1V2ld <- AAS1V2l$arma[[5]]
+ETSS1V1 <- ets(S1V1, model = 'ZZZ', ic = 'aicc')
+ETSS1V2 <- ets(S1V2, model = 'ZZZ', ic = 'aicc')
+ETSS1V2l <- ets(S1V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
+                biasadj = TRUE)
 ```
-
-### Stationarity
-Both variables, as they stand are non-stationary. Statistical tests indicate
-that a difference of lag 1 is sufficient to induce stationarity.
-
-### Seasonality
-Once differenced, neither variable exhibits seasonality.
-
-### Missing Data
-With no apparent seasonality, the missing 2 variables for out of 1662 values for
-V1 were imputed by linear interpolation. There are no missing values for V2.
-
-### Transformations
-After investigating the options, V1 was modeled with neither outlier replacement
-nor transformation and V2 was modeled without explicit outlier replacement but
-included an option with a Box-Cox transform to reduce its variability.
 
 ### Model Selection
 Exponentially smoothed and ARIMA models were reviewed, with details in the
@@ -126,9 +112,8 @@ Box-Cox \(\lambda\) of `r AAV2l$lambda[[1]]`
 The mean forecast values will be supplied in the attached Excel workbook. The
 mean forecasts with error bands are plotted below
 ```{r S1forecastplots, echo=FALSE}
-autoplot(forecast(AAV1, h = 140)) + ylab("V1")
-autoplot(forecast(AAV2l, h = 140, lambda = AAV2l$lambda[[1]], biasadj = TRUE)) +
-  ylab("V2")
+autoplot(forecast(AAS1V1, h = 140)) + ylab("V1")
+autoplot(forecast(AAS1V2l, h = 140)) + ylab("V2")
 ```
 
 ## Series 3
@@ -555,8 +540,8 @@ For V1, five points were identified as outliers using the `tsoutliers` function
 in the `forecast` package.
 ```{r, S1V1Out}
 plot(S1V1, main = "Outliers for V1", ylab = "V1")
-points(V1O$index, V1O$replacements, col = 'red', pch = 16L)
-points(V1O$index, S1V1[V1O$index], col = 'blue', pch = 16L)
+points(S1V1O$index, S1V1O$replacements, col = 'red', pch = 16L)
+points(S1V1O$index, S1V1[S1V1O$index], col = 'blue', pch = 16L)
 legend('topleft', c("Outlier", "Replacement"), pch = 16L,
        col = c('blue', 'red'))
 ```
@@ -570,7 +555,7 @@ It is clear that there is non-stationarity in V1 when looking at autocorrelation
 plots.
 
 ```{r S1V1acf, echo=FALSE, fig.width=10L}
-ggAcf(S1V1, type = 'correlation') + ggtitle("V1 Autocorrelation")
+ggAcf(S1V1, type = 'correlation') + ggtitle("Series 1: V1 Autocorrelation")
 ```
 
 The autocorrelation plot shows slowly decreasing but continually positive
@@ -589,7 +574,7 @@ summary(ur.kpss(diff(S1V1)))
 Once differenced, there is no apparent seasonality at any reasonable lag value.
 ```{r S1V1lagplots, echo=FALSE, fig.width=10L}
 gglagplot(diff(S1V1), set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
-  ggtitle("Lag Plots for Differenced Variable 1")
+  ggtitle("Lag Plots for Differenced Series 1 Variable 1")
 ```
 
 #### ARIMA parameters
@@ -608,7 +593,7 @@ in the automatic trial-and-error fitting procedures. Lastly, as the entirety of
 V1 demonstrates a clear upward trend, fitting will be with drift allowed.
 
 For V1, the best model using maximum likelihood is estimated as an
-ARIMA(`r V1p`, `r V1d`, `r V1q`). However, looking at the characteristic roots
+ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`). However, looking at the characteristic roots
 gives some pause as the majority of its roots lie near the boundary of the unit
 circle. This is despite the author's claim:
 "*The `auto.arima()` function is even stricter, and will not select a model*
@@ -617,7 +602,7 @@ circle. This is despite the author's claim:
 Hyndman & Athanasopoulos 2018).
 
 ```{r S1V1unitC1}
-autoplot(AAV1)
+autoplot(AAS1V1)
 ```
 
 A number of other models were investigated, but the ones which brought their
@@ -627,25 +612,25 @@ fit (Burnham \& Anderson 2012). Therefore, the original model is retained.
 The residuals for this model visually exhibit very little heteroskedasticity, 
 and are particularly Gaussian in nature.
 ```{r S1V1resid, echo=FALSE, fig.width=10L, fig.height=8L}
-checkresiduals(AAV1)
+checkresiduals(AAS1V1)
 ```
 
 #### Exponential Smoothing State Space
 An exponential smoothing state-space model was fit to the data as well and
-returned a `r ETSV1$method` model. The accuracy of the models are compared
+returned a `r ETSS1V1$method` model. The accuracy of the models are compared
 below, first the ARIMA model and then the ETS model.
-```{r V1wAcc}
-accuracy(AAV1)
-accuracy(ETSV1)
+```{r S1V1wAcc}
+accuracy(AAS1V1)
+accuracy(ETSS1V1)
 ```
 
 More importantly, since they are fit on the exact same data, their AICc may
-be compared. For the ARIMA model it is `r AAV1$aicc` and for the ETS model, it
+be compared. For the ARIMA model it is `r AAS1V1$aicc` and for the ETS model, it
 is `r ETSV1$aicc`. The choice is clear, that the ARIMA model is superior.
 
 #### Selection
-The ARIMA(`r V1p`, `r V1d`, `r V1q`) model will be used to forecast Variable 01
-for Series 01.
+The ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`) model will be used to forecast
+Variable 01 for Series 01.
 
 ### Variable 02
 #### Missing Data
@@ -656,8 +641,8 @@ Using the same technique, there are `r length(V2O$index)` outliers identified
 for V2.
 ```{r, S1V2aOut}
 plot(S1V2, main = "Outliers for V1", ylab = "V1")
-points(V2O$index, V2O$replacements, col = 'red', pch = 16L)
-points(V2O$index, S1V2[V2O$index], col = 'blue', pch = 16L)
+points(S1V2O$index, S1V2O$replacements, col = 'red', pch = 16L)
+points(S1V2O$index, S1V2[S1V2O$index], col = 'blue', pch = 16L)
 legend('topleft', c("Outlier", "Replacement"), pch = 16L,
        col = c('blue', 'red'))
 ```
@@ -677,7 +662,7 @@ It is clear that there is non-stationarity in V2 when looking at autocorrelation
 plots.
 
 ```{r S1V2acf, echo=FALSE, fig.width=10L}
-ggAcf(S1V2, type = 'correlation') + ggtitle("V2 Autocorrelation")
+ggAcf(S1V2, type = 'correlation') + ggtitle("Series 1: V2 Autocorrelation")
 ```
 
 The same tests as performed on V1 indicate that a difference of one lag will be
@@ -693,7 +678,7 @@ Once differenced, there is no apparent seasonality at any reasonable lag value.
 ```{r S1V2lagplots, echo=FALSE, fig.width=10L}
 gglagplot(diff(S1V2),
           set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
-  ggtitle("Lag Plots for Differenced Variable 2") +
+  ggtitle("Lag Plots for Differenced Series 1 Variable 2") +
   scale_x_continuous(breaks = breaks_extended(n = 3L),
                      labels = label_scientific(digits = 1L)) 
 ```
@@ -709,18 +694,18 @@ Here, there is certainly more uncertainty as to what parameters should be
 selected. Therefore, the best option is once again an exhaustive search.
 
 Using the same exhaustive technique as for V1, the best selected model for V2 is
-an ARIMA(`r V2p`, `r V2d`, `r V2q`) model. The autoregressive component for V2
-makes sense in the context of the partial autocorrelation plot above; the fourth
-partial autocorrelation is larger in magnitude than all that follow. 
+an ARIMA(`r S1V2p`, `r S1V2d`, `r S1V2q`) model. The autoregressive component
+for V2 makes sense in the context of the partial autocorrelation plot above; the
+fourth partial autocorrelation is larger in magnitude than all that follow. 
 
 However, once again, the characteristic roots raise the specter of instability.
 ```{r S1V2unitC1, echo=FALSE}
-autoplot(AAV2) + ggtitle("Inverse Roots for V2")
+autoplot(AAS1V2) + ggtitle("Inverse Roots for Series 1 V2")
 ```
 
 The residuals look poor as well.
 ```{r S1V2Resid, echo=FALSE}
-checkresiduals(AAV2)
+checkresiduals(AAS1V2)
 ```
 
 Similar to V1, multiple models were investigated including limiting the order of
@@ -734,38 +719,46 @@ became prudent to investigate a Box-Cox transform. Similar to the cases above,
 the important findings and graphics are reprised below.
 
 The best model under order 20 for V2 transformed via Box-Cox (\(\lambda = \)
-`r AAV2l$lambda[[1]]`) is once again an ARIMA(`r V2lp`, `r V2ld`, `r V2lq`).
-It too cannot be directly compared to the earlier two models, as it is based on
-different data. Its characteristic roots are not much better than the original.
+`r AAS1V2l$lambda[[1]]`) is once again an
+ARIMA(`r S1V2lp`, `r S1V2ld`, `r S1V2lq`). It too cannot be directly compared to
+the earlier two models, as it is based on different data. Its characteristic
+roots are not much better than the original.
 
 ```{r S1V2l_unitC2, echo=FALSE}
-autoplot(AAV2l)
+autoplot(AAS1V2l)
 ```
 
 However, its residuals show clear improvement.
 ```{r S1V2lresid, echo=FALSE, fig.width=10L, fig.height=8L}
-checkresiduals(AAV2l)
+checkresiduals(AAS1V2l)
 ```
 
 #### Exponential Smoothing State Space
 An ETS model with and without Box-Cox was also fit. These returned an
-`r ETSV2$method` and `r ETSV2l$method` respectively. The accuracy and AICc are
-shown below in the following order: ARIMA without Box-Cox, ARIMA with Box-Cox,
-ETS without Box-Cox, and lastly ETS without Box-Cox.
-```{r ETSAcc, echo=FALSE}
-accuracy(AAV2)
-accuracy(AAV2l)
-accuracy(ETSV2)
-accuracy(ETSV2l)
+`r ETSS1V2$method` and `r ETSS1V2l$method` respectively.
+
+#### Model Comparison and Selection
+The accuracy of the models are compared below.
+
+```{r S1V2Acc, echo=FALSE}
+accS1V2 <- rbind(data.frame(accuracy(AAS1V2)),
+                 data.frame(accuracy(AAS1V2l)),
+                 data.frame(accuracy(ETSS1V2)),
+                 data.frame(accuracy(ETSS1V2l)))
+row.names(accS1V2) <- c('ARIMA', 'ARIMA+BC', 'ETS', 'ETS+BC')
+knitr::kable(accS1V2, digits = 5L, format = 'pandoc')
 ```
 
-The AICc values are also shown below for comparable models.
-```{r ETSAICc, echo=FALSE, warning=FALSE, message=FALSE}
-knitr::kable(data.frame(Name = c('ARIMA', ETSV2$method),
-           AICc = c(AAV2$aicc, ETSV2$aicc)))
+The AICc may be compared within untransformed and Box-Cox transformed models,
+but not between them.
 
-knitr::kable(data.frame(Name = c('ARIMA+BoxCox', ETSV2l$method),
-           AICc = c(AAV2l$aicc, ETSV2l$aicc)))
+```{r S5V3AICc, echo=FALSE}
+aiccUTS1V2 <- data.frame(Models = c('ARIMA', 'ETS'),
+                         AICc = c(AAS1V2$aicc, ETSS1V2$aicc))
+aiccBCS1V2 <- data.frame(Models = c('ARIMA+BC', 'ETS+BC'),
+                         AICc = c(AAS1V2l$aicc, ETSS1V2l$aicc))
+knitr::kable(aiccUTS1V2, digits = 3L, format = 'pandoc')
+knitr::kable(aiccBCS1V2, digits = 3L, format = 'pandoc')
 ```
 
 In both cases, the ARIMA variants outperform their exponentially smoothed
@@ -773,8 +766,8 @@ counterparts. Moreover, in comparable metrics (e.g. RMSE), the Box-Cox
 transformation shows better results (and better residuals).
 
 #### Selection
-The ARIMA(`r V2lp`, `r V2ld`, `r V2lq`) with lambda `r AAV2l$lambda[[1]]` model
-will be used to forecast Variable 02 for Series 01.
+The ARIMA(`r AAS1V2lp`, `r AAS1V2ld`, `r AAS1V2lq`) with lambda
+`r AAS1V2l$lambda[[1]]` model will be used to forecast Variable 02 of Series 01.
 
 ## Series 3
 ### Missing Value Imputation
