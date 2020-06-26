@@ -32,6 +32,16 @@ for (i in seq_len(n)) {
 
 # Following is useful to quickly remove "future" periods from groups
 futureobs <- 1623:1762
+
+arimaDisplay <- function(arimaobject) {
+  paste0("ARIMA(",
+         arimaorder(arimaobject)[["p"]],
+         ",",
+         arimaorder(arimaobject)[["d"]],
+         ",",
+         arimaorder(arimaobject)[["q"]],
+         ")")
+}
 ```
 
 # Introduction
@@ -85,18 +95,12 @@ AAS1V1 <- auto.arima(S1V1, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                      approximation = FALSE, seasonal = FALSE, parallel = TRUE)
 AAS1V2 <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                      approximation = FALSE, seasonal = FALSE, parallel = TRUE)
-S1V1p <- AAS1V1$arma[[1]]
-S1V1q <- AAS1V1$arma[[2]]
-S1V1d <- AAS1V1$arma[[5]]
-S1V2p <- AAS1V2$arma[[1]]
-S1V2q <- AAS1V2$arma[[2]]
-S1V2d <- AAS1V2$arma[[5]]
+AAS1V1l <- auto.arima(S1V1, max.order = 8L, ic = 'aicc', stepwise = FALSE,
+                     approximation = FALSE, seasonal = FALSE, parallel = TRUE,
+                     lambda = 'auto', biasadj = TRUE)
 AAS1V2l <- auto.arima(S1V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                       approximation = FALSE, seasonal = FALSE, parallel = TRUE,
                       lambda = 'auto', biasadj = TRUE)
-S1V2lp <- AAS1V2l$arma[[1]]
-S1V2lq <- AAS1V2l$arma[[2]]
-S1V2ld <- AAS1V2l$arma[[5]]
 ETSS1V1 <- ets(S1V1, model = 'ZZZ', ic = 'aicc')
 ETSS1V2 <- ets(S1V2, model = 'ZZZ', ic = 'aicc')
 ETSS1V2l <- ets(S1V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
@@ -105,9 +109,9 @@ ETSS1V2l <- ets(S1V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
 
 ### Model Selection
 Exponentially smoothed and ARIMA models were reviewed, with details in the
-appendix. The selected model for V1 is an ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`)
-with drift and for V2 it is an ARIMA(`r S1V2lp`, `r S1V2ld`, `r S1V2lq`) with a
-Box-Cox \(\lambda\) of `r AAS1V2l$lambda[[1]]`
+appendix. The selected model for V1 is an `r arimaDisplay(AAS1V1)` with drift
+and for V2 it is an `r arimaDisplay(AAS1V2l)` with a Box-Cox \(\lambda\) of
+`r AAS1V2l$lambda[[1]]`
 
 ### Forecasts
 The mean forecast values will be supplied in the attached Excel workbook. The
@@ -383,12 +387,6 @@ AAS5V2 <- auto.arima(S5V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE)
 AAS5V3 <- auto.arima(S5V3, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE)
-S5V2p <- AAS5V2$arma[[1]]
-S5V2q <- AAS5V2$arma[[2]]
-S5V2d <- AAS5V2$arma[[5]]
-S5V3p <- AAS5V3$arma[[1]]
-S5V3q <- AAS5V3$arma[[2]]
-S5V3d <- AAS5V3$arma[[5]]
 AAS5V2l <- auto.arima(S5V2, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE,
                    lambda = 'auto', biasadj = TRUE)
@@ -396,12 +394,6 @@ S5V3lam <- BoxCox.lambda(S5V3, lower = -5, upper = 5)
 AAS5V3l <- auto.arima(S5V3, max.order = 8L, ic = 'aicc', stepwise = FALSE,
                    approximation = FALSE, seasonal = FALSE, parallel = TRUE,
                    lambda = S5V3lam, biasadj = TRUE)
-S5V2lp <- AAS5V2l$arma[[1]]
-S5V2lq <- AAS5V2l$arma[[2]]
-S5V2ld <- AAS5V2l$arma[[5]]
-S5V3lp <- AAS5V3l$arma[[1]]
-S5V3lq <- AAS5V3l$arma[[2]]
-S5V3ld <- AAS5V3l$arma[[5]]
 ETSS5V2 <- ets(S5V2, model = 'ZZZ', ic = 'aicc')
 ETSS5V2l <- ets(S5V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
                 biasadj = TRUE)
@@ -412,10 +404,9 @@ ETSS5V3l <- ets(S5V3, model = 'ZZZ', ic = 'aicc', lambda = S5V3lam,
 
 ### Model Selection
 Exponentially smoothed and ARIMA models were reviewed, with details in the
-appendix. The selected model for V2 is an
-ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`) model with
+appendix. The selected model for V2 is an `r arimaDisplay(AAS5V2l)` model with
 \(\lambda=\)`r AAS5V2l$lambda[[1]]`. The selected model for V3 is an
-ARIMA(`r S5V3p`, `r S5V3d`, `r S5V3q`).
+`r arimaDisplay(AAS5V3)`.
 
 ### Forecasts
 The mean forecast values will be supplied in the attached Excel workbook. The
@@ -637,7 +628,7 @@ in the automatic trial-and-error fitting procedures. Lastly, as the entirety of
 V1 demonstrates a clear upward trend, fitting will be with drift allowed.
 
 For V1, the best model using maximum likelihood is estimated as an
-ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`). However, looking at the characteristic roots
+`r arimaDisplay(AAS1V1)`. However, looking at the characteristic roots
 gives some pause as the majority of its roots lie near the boundary of the unit
 circle. This is despite the author's claim:
 "*The `auto.arima()` function is even stricter, and will not select a model*
@@ -673,8 +664,8 @@ be compared. For the ARIMA model it is `r AAS1V1$aicc` and for the ETS model, it
 is `r ETSS1V1$aicc`. The choice is clear, that the ARIMA model is superior.
 
 #### Selection
-The ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`) model will be used to forecast
-Variable 01 for Series 01.
+The `r arimaDisplay(AAS1V1)` model will be used to forecast Variable 01 for
+Series 01.
 
 ### Variable 02
 #### Missing Data
@@ -738,9 +729,9 @@ Here, there is certainly more uncertainty as to what parameters should be
 selected. Therefore, the best option is once again an exhaustive search.
 
 Using the same exhaustive technique as for V1, the best selected model for V2 is
-an ARIMA(`r S1V2p`, `r S1V2d`, `r S1V2q`) model. The autoregressive component
-for V2 makes sense in the context of the partial autocorrelation plot above; the
-fourth partial autocorrelation is larger in magnitude than all that follow. 
+an `r arimaDisplay(AAS1V2)` model. The autoregressive component for V2 makes
+sense in the context of the partial autocorrelation plot above; the fourth
+partial autocorrelation is larger in magnitude than all that follow. 
 
 However, once again, the characteristic roots raise the specter of instability.
 ```{r S1V2unitC1, echo=FALSE}
@@ -763,10 +754,9 @@ became prudent to investigate a Box-Cox transform. Similar to the cases above,
 the important findings and graphics are reprised below.
 
 The best model under order 20 for V2 transformed via Box-Cox (\(\lambda = \)
-`r AAS1V2l$lambda[[1]]`) is once again an
-ARIMA(`r S1V2lp`, `r S1V2ld`, `r S1V2lq`). It too cannot be directly compared to
-the earlier two models, as it is based on different data. Its characteristic
-roots are not much better than the original.
+`r AAS1V2l$lambda[[1]]`) is once again an `r arimaDisplay(AAS1V2l)`. It too
+cannot be directly compared to the earlier two models, as it is based on
+different data. Its characteristic roots are not much better than the original.
 
 ```{r S1V2l_unitC2, echo=FALSE}
 autoplot(AAS1V2l)
@@ -811,8 +801,8 @@ counterparts. Moreover, in comparable metrics (e.g. RMSE), the Box-Cox
 transformation shows better results (and better residuals).
 
 #### Selection
-The ARIMA(`r S1V2lp`, `r S1V2ld`, `r S1V2lq`) with lambda
-`r AAS1V2l$lambda[[1]]` model will be used to forecast Variable 02 of Series 01.
+The `r arimaDisplay(AAS1V2l)` with \(\lambda=\)`r AAS1V2l$lambda[[1]]` model
+will be used to forecast Variable 02 of Series 01.
 
 ## Series 3
 ### Missing Value Imputation
@@ -1178,9 +1168,9 @@ goodness-of-fit measure. While \(d\) has been robustly estimated as 1, it too
 will be left blank for use in the automatic trial-and-error fitting procedures.
 
 For V1, the best model using maximum likelihood is estimated as an
-ARIMA(`r S5V2p`, `r S5V2d`, `r S5V2q`). Looking at the characteristic roots
-is mainly reassuring. The AR roots are all well within the circle. The MA root
-is close to the boundary, but is acceptable.
+`r arimaDisplay(AAS5V2)`. Looking at the characteristic roots is mainly
+reassuring. The AR roots are all well within the circle. The MA root is close to
+the boundary, but is acceptable.
 
 ```{r S5V2unitC1}
 autoplot(AAS5V2)
@@ -1195,10 +1185,10 @@ checkresiduals(AAS5V2)
 #### Box-Cox Adjusted Model
 The model was fit with the same exhaustive procedure using a Box-Cox adjustment
 with \(\lambda=\)`r AAS5V2l$lambda[[1]]`. The best-fitting model was a more
-parsimonious ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`). This too exhibited safe
-roots and acceptable residuals. What is of note is that despite a similar PACF
-graph as to the untransformed series, the model with the lowest AICc has fewer
-AR components than would have been expected.
+parsimonious `r arimaDisplay(AAS5V2l)`. This too exhibited safe roots and
+acceptable residuals. What is of note is that despite a similar PACF graph as to
+the untransformed series, the model with the lowest AICc has fewer AR components
+than would have been expected.
 
 ```{r S5V2BC, echo=FALSE}
 ggtsdisplay(diff(BoxCox(S5V2, AAS5V2l$lambda[[1]])))
@@ -1240,9 +1230,9 @@ knitr::kable(aiccBCS5V2, digits = 3L, format = 'pandoc')
 It is clear that the ARIMA models outperform their state space equivalents for
 almost all statistics. When choosing between the ARIMA and ARIMA+BC models,
 most statistics, including the MAPE, point to the Box-Cox adjusted model. Thus,
-the ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`) model with
-\(\lambda=\)`r AAS5V2l$lambda[[1]]` will be used to forecast Series 05
-Variable 02, with the bias adjustment to recover the mean and not the median.
+the `r arimaDisplay(AAS5V2l)` model with \(\lambda=\)`r AAS5V2l$lambda[[1]]`
+will be used to forecast Series 05 Variable 02, with the bias adjustment to
+recover the mean and not the median.
 
 ### Variable 03
 #### Missing Data
@@ -1305,8 +1295,8 @@ To quote Dr. Uwe Ligges of the University of Dortmund and a member of R core for
 many decades "*RAM is cheap and thinking hurts*" (Ligges 2007).
 
 Using the same exhaustive technique as for V2, the best selected model for
-untransformed V3 is an ARIMA(`r S5V3p`, `r S5V3d`, `r S5V3q`) model. Many of 
-its characteristic roots are near the boundary, which is somewhat concerning.
+untransformed V3 is an `r arimaDisplay(AAS5V3)` model. Many of its characteristic
+roots are near the boundary, which is somewhat concerning.
 ```{r S5V3unitC1, echo=FALSE}
 autoplot(AAS5V3) + ggtitle("Inverse Roots for Untransformed Series 5 V3")
 ```
@@ -1319,8 +1309,8 @@ checkresiduals(AAS5V3)
 #### Applying Box-Cox
 The model was fit with the same exhaustive procedure using a Box-Cox adjustment
 with \(\lambda=\)`r S5V3lam`. Interestingly, the best-fitting model is a less
-parsimonious ARIMA(`r S5V3lp`, `r S5V3ld`, `r S5V3lq`). The added MA root is well
-within the circle, the others are similar to the untransformed model.
+parsimonious `r arimaDisplay(AAS5V3l)`. The added MA root is well within the
+circle, the others are similar to the untransformed model.
 
 ```{r S5V3l_unitC2, echo=FALSE}
 autoplot(AAS5V3l)
@@ -1364,8 +1354,8 @@ smoothed counterparts. This time, in comparable metrics (e.g. RMSE), the Box-Cox
 transformation does not show better results. Moreover, the \(\lambda\) is
 greater than 2, and serves to exaggerate the outliers, as can be seen from the
 plots above. Therefore, in the interests of accuracy, parsimony, and data
-fidelity, the ARIMA(`r S5V3p`, `r S5V3d`, `r S5V3q`) model will be used to
-forecast Variable 03 for Series 05.
+fidelity, the `r arimaDisplay(AAS5V3)` model will be used to forecast Variable
+03 for Series 05.
 
 ## Series 6
 ### Missing Value Imputation
