@@ -344,8 +344,8 @@ S4V2_boxed_outliers_autoarima = auto.arima(S4V2_clean, ic = 'aicc',
 The forecast for both series can be seen below.
 
 ```{r, echo=FALSE}
-plot(forecast(S4V1_boxed_autoarima, h = 140), main = "Forecast for V1")
-plot(forecast(S4V2_boxed_outliers_autoarima, h = 140, biasadj = TRUE),
+autoplot(forecast(S4V1_boxed_autoarima, h = 140), main = "Forecast for V1")
+autoplot(forecast(S4V2_boxed_outliers_autoarima, h = 140, biasadj = TRUE),
      main = "Forecast for V2")
 ```
 ```{r S4Final, include=FALSE}
@@ -477,7 +477,8 @@ rwf(s6v5, h = 140, drift = T) %>% autoplot() + ylab('Var05')
 rwf(s6v7, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 ```
 
-The baseline model has an error of 16.72. This is not meaningful in and of itself but rather as a comparison to other models.
+The baseline model has an error of 16.72. This is not meaningful in and of
+itself but rather as a comparison to other models.
 
 ### Decomposition
 
@@ -519,7 +520,9 @@ arima_s6v7 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 arima_s6v5
 ```
 
-The ARIMA model has an error of 16.74, worse than the exponential smoothing model and even underperforming the baseline. It also has a higher level of complexity so it makes sense to select the simpler and more accurate model.
+The ARIMA model has an error of 16.74, worse than the exponential smoothing
+model and even underperforming the baseline. It also has a higher level of
+complexity so it makes sense to select the simpler and more accurate model.
 
 ```{r S6Final, include=FALSE}
 S6Final <- data.table(Var05 = forecast(ets_s6v5, h = 140)$mean,
