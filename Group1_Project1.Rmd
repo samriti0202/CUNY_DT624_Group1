@@ -528,6 +528,10 @@ complexity so it makes sense to select the simpler and more accurate model.
 S6Final <- data.table(Var05 = forecast(ets_s6v5, h = 140)$mean,
                       Var07 = forecast(ets_s6v7, h = 140)$mean)
 ```
+
+## Predictions
+The predicted forecasts can be found in the attached Excel workbook named
+`DT624_Summer2020_Group1.xlsx`.
 ```{r createExcel, include=FALSE}
 G1P1 <- createWorkbook(creator = "DT624_Summer2020_Group1")
 addWorksheet(G1P1, "Set for Class")
@@ -814,7 +818,7 @@ knitr::kable(accS1V2, digits = 3L, format = 'pandoc')
 The AICc may be compared within untransformed and Box-Cox transformed models,
 but not between them.
 
-```{r S1V1AICc, echo=FALSE}
+```{r S1V2AICc, echo=FALSE}
 aiccUTS1V2 <- data.frame(Models = c('ARIMA', 'ETS'),
                          AICc = c(AAS1V2$aicc, ETSS1V2$aicc))
 aiccBCS1V2 <- data.frame(Models = c('ARIMA+BC', 'ETS+BC'),
@@ -829,6 +833,22 @@ as most statistics demonstrate the superiority of the Box-Cox transform.
 Therefore, the the `r arimaDisplay(AAS1V2l)` model with
 \(\lambda=\)`r AAS1V2l$lambda[[1]]` will be used to forecast Series 01 Variable
 02, with the bias adjustment to recover the mean and not the median.
+
+### Cross-correlation
+While the raw series did exhibit negative correlation, the analysis concluded
+that both series needed differencing. Once that occurred, the cross-correlation
+shrunk dramatically. Compare the two plots below.
+
+```{r S1CrossCor, echo=FALSE}
+ggCcf(S1V1, S1V2) + ggtitle("Cross Correlation V1 & V2: Raw")
+ggCcf(diff(S1V1), diff(S1V2)) + ggtitle("Cross Correlation V1 & V2: Differenced")
+```
+
+After differencing, the only correlations it would appear worthwhile to
+investigate are those at lag 0 (correlation) and lag 1 (cross-correlation). A
+future enhancement may be to consider some form of expectation-maximization or
+staggered fitting algorithm where the value of \(V_{i_k}\) would also depend on
+the value of \(V_{j_{k-1}}\).
 
 ## Series 3
 ### Missing Value Imputation
@@ -944,7 +964,7 @@ confirms our decision to use the ARIMA model for this series.
 ### S4V1
 #### Outlier Replacement
 
-```{r}
+```{r S4_1}
 #outliers do not look significant enough to be replaced
 
 plot(S4V1, main = "Outliers for V1", ylab = "V1")
@@ -962,7 +982,7 @@ series.
 
 #### Stationarity
 
-```{r}
+```{r S4_2}
 #nonstationary
 
 ggAcf(S4V1, type = 'correlation') + ggtitle("V1 Autocorrelation")
@@ -976,7 +996,7 @@ improve the stationarity. According to the tests, differencing appears to
 improve the stationarity significantly as seen by the value of the test
 statistic falling under the 1 percent critical value.
 
-```{r}
+```{r S4_3}
 # One lag is good enough because test statistic falls below the 1 percent
 # critical value
 
@@ -988,7 +1008,7 @@ After taking the first difference, we can see a significant improvement in the
 stationarity as shown in the lag plots below. None of the lags appear to exhibit
 a linear pattern, which means that the data is more stationary now.
 
-```{r}
+```{r S4_4}
 #after differencing, autocorrelation is gone as seen by random pattern
 gglagplot(diff(S4V1), set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
   ggtitle("Lag Plots for Differenced Variable 1")
@@ -1004,7 +1024,7 @@ time increases, which indicates that a Box-Cox transformation may be necessary.
 At this point, the candidate model appears to be a Box-Cox transformed
 ARIMA(0,1,0) model.
 
-```{r}
+```{r S4_5}
 #lag at 17 may indicate something
 ggtsdisplay(diff(S4V1))
 ```
@@ -1015,7 +1035,7 @@ compared to the ARIMA(0,1,0) model. This ARIMA(0,1,1) model exhibited good
 residuals with no discernible pattern, constant variance, and a normal
 distribution. In other words, the residuals appear to be Gaussian Noise.
 
-```{r}
+```{r S4_6}
 #residuals looking good. no discernible patterns, Gaussian noise.
 checkresiduals(S4V1_boxed_autoarima)
 ```
@@ -1028,7 +1048,7 @@ replacements in red. As we can see, there are many outliers in this series and
 that their replacements are much more reasonable values. For this series,
 replacing the outliers would create better forecasts.
 
-```{r}
+```{r S4_7}
 #there are many outliers that need to be replaced
 
 plot(S4V2, main = "Outliers for V2", ylab = "V2")
@@ -1043,7 +1063,7 @@ According to the ACF plot below, the data exhibits very clear non-stationarity
 due to the spikes across all lags. Differencing will be necessary to make the
 series stationary.
 
-```{r}
+```{r S4_8}
 #nonstationary
 
 ggAcf(S4V2_clean, type = 'correlation') + ggtitle("V2 Autocorrelation")
@@ -1054,7 +1074,7 @@ sufficient for creating a stationary series. The value of the test statistic
 falls below the critical value at 1 percent, which indicates that the series is
 stationary.
 
-```{r}
+```{r S4_9}
 # One lag is good enough because test statistic falls below the 1 percent
 # critical value
 
@@ -1065,7 +1085,7 @@ summary(ur.kpss(diff(S4V2_clean)))
 The lag plot below further reinforces the idea that the once differenced series
 is stationary given that there is no linear pattern for any lag.
 
-```{r}
+```{r S4_10}
 #lags look more random now after differencing
 gglagplot(diff(S4V2_clean),
           set.lags = c(1, 2, 3, 4, 5, 6, 7, 12, 30, 91, 182, 365)) +
@@ -1088,7 +1108,7 @@ Given that there are many moving parts for this series, we decided to use the
 `auto.arima` function to fit a variety of different models at various `p` and
 `q` values with and without a Box-Cox transformation.
 
-```{r}
+```{r S4_11}
 #PACF would suggest an ARIMA(3,1,q) or ARIMA(4,1,q) model
 #ACF would suggest an ARIMA(p,1,1) or ARIMA(p,1,2) model
 
@@ -1101,7 +1121,7 @@ most of the roots are not close to the unit circle. However, there is one MA
 root that is close to the circle, which could indicate that the forecast may not
 be as accurate as we hope.
 
-```{r}
+```{r S4_12}
 # AR roots look fine, MA root is too close to the unit circle, which indicates
 # that the model might not be good for forecasting
 autoplot(S4V2_boxed_outliers_autoarima)
@@ -1115,7 +1135,7 @@ constant, there is no indication of autocorrelation of the residuals, and the
 residuals are normally distributed. All these factors would indicate that the
 residuals are white noise.
 
-```{r}
+```{r S4_13}
 # The outlier replacement model appears to be the best compared to the other
 # models
 
