@@ -185,7 +185,7 @@ rwf(s3v1, h = 140, drift = T) %>% autoplot() + ylab('Var05')
 rwf(s3v2, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 ```
 
-The cumulative error for our baseline model is 3700, which is meaningless in and
+The cumulative error for our baseline model is 20.09, which is meaningless in and
 of itself but will be an excellent comparison point for other models.
 
 ### Decomposition
@@ -211,7 +211,7 @@ fit2 <- ets(s3v2, model = 'AAN', damped = F)
 fit2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 ```
 
-Exponential Smoothing models achieved an error of 3650, a slight improvement on
+Exponential Smoothing models achieved an error of 20.05, a slight improvement on
 the baseline model.
 
 ### Differencing Data
@@ -239,7 +239,7 @@ arima_s3v2 <- Arima(s3v2, order = c(1,1,0), include.drift = T)
 arima_s3v2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 ```
 
-The ARIMA model has an error of 3630, the lowest of the 3 models. All 3 models
+The ARIMA model has an error of 19.98, the lowest of the 3 models. All 3 models
 make very similar looking positions so we will select the ARIMA model as it has
 the lowest error across the validation period.
 
@@ -379,7 +379,7 @@ rwf(s6v5, h = 140, drift = T) %>% autoplot() + ylab('Var05')
 rwf(s6v7, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 ```
 
-The baseline model has an error of 486. This is not meaningful in and of itself but rather as a comparison to other models.
+The baseline model has an error of 16.72. This is not meaningful in and of itself but rather as a comparison to other models.
 
 ### Decomposition
 
@@ -401,7 +401,7 @@ ets_s6v7 <- ets(s6v7, model = 'AAN', damped = F)
 ets_s6v7 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 ```
 
-This model has an error of 481, slightly lower than the baseline.
+This model has an error of 16.69, slightly lower than the baseline.
 
 ### ARIMA Model
 
@@ -416,7 +416,7 @@ arima_s6v7 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 arima_s6v5
 ```
 
-The ARIMA model has an error of 482, slightly worse than the exponential smoothing model. It also has a higher level of complexity so it makes sense to select the simpler and more accurate model.
+The ARIMA model has an error of 16.74, worse than the exponential smoothing model and even underperforming the baseline. It also has a higher level of complexity so it makes sense to select the simpler and more accurate model.
 
 # Analytical Appendix
 ## Data Preprocessing
@@ -717,8 +717,8 @@ error is the sum of squared errors.
 drift_sse_v1 <- 0
 for(i in 100:(length(s3v1)-1)){
   pred <- rwf(s3v1[1:i], h = 1, drift = T)
-  error <- as.numeric(pred$mean) - s3v1[i+1]
-  drift_sse_v1 <- drift_sse_v1 + error**2
+  error <- abs((s3v1[i+1] - as.numeric(pred$mean))/as.numeric(pred$mean))
+  drift_sse_v1 <- drift_sse_v1 + error
 }
 drift_sse_v1
 ```
@@ -729,8 +729,8 @@ ets_sse <- 0
 for(i in 100:(length(s3v1)-1)){
   model <- ets(s3v1[1:i], model = 'AAN')
   pred <- model %>% forecast(h = 1)
-  error <- as.numeric(pred$mean) - s3v1[i+1]
-  ets_sse <- ets_sse + error**2
+  error <- abs((s3v1[i+1] - as.numeric(pred$mean))/as.numeric(pred$mean))
+  ets_sse <- ets_sse + error
 }
 ets_sse
 ```
@@ -763,9 +763,10 @@ arima_sse <- 0
 for(i in 100:(length(s3v1)-1)){
   model <- Arima(s3v1[1:i], order = c(1,1,0), include.drift = T)
   pred <- model %>% forecast(h = 1)
-  error <- as.numeric(pred$mean) - s3v1[i+1]
-  arima_sse <- arima_sse + error**2
+  error <- abs((s3v1[i+1] - as.numeric(pred$mean))/as.numeric(pred$mean))
+  arima_sse <- arima_sse + error
 }
+arima_sse
 ```
 
 ### Model Residuals
@@ -971,8 +972,8 @@ Error is calculated using hold one out validation where a model is build on all 
 drift_sse_v1 <- 0
 for(i in 100:(length(s6v5)-1)){
   pred <- rwf(s6v5[1:i], h = 1, drift = T)
-  error <- as.numeric(pred$mean) - s6v5[i+1]
-  drift_sse_v1 <- drift_sse_v1 + error**2
+  error <- abs((s6v5[i+1] - as.numeric(pred$mean))/as.numeric(pred$mean))
+  drift_sse_v1 <- drift_sse_v1 + error
 }
 drift_sse_v1
 ```
@@ -984,8 +985,8 @@ ets_sse <- 0
 for(i in 100:(length(s6v5)-1)){
   model <- ets(s6v5[1:i], model = 'AAN')
   pred <- model %>% forecast(h = 1)
-  error <- as.numeric(pred$mean) - s6v5[i+1]
-  ets_sse <- ets_sse + error**2
+  error <- abs((s6v5[i+1] - as.numeric(pred$mean))/as.numeric(pred$mean))
+  ets_sse <- ets_sse + error
 }
 ets_sse
 ```
@@ -1015,8 +1016,8 @@ arima_sse <- 0
 for(i in 100:(length(s6v5)-1)){
   model <- Arima(s6v5[1:i], order = c(2,1,2), method = 'CSS', include.drift = T)
   pred <- model %>% forecast(h = 1)
-  error <- as.numeric(pred$mean) - s6v5[i+1]
-  arima_sse <- arima_sse + error**2
+  error <- abs((s6v5[i+1] - as.numeric(pred$mean))/as.numeric(pred$mean))
+  arima_sse <- arima_sse + error
 }
 arima_sse
 ```
