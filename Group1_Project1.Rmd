@@ -110,8 +110,8 @@ ETSS1V2l <- ets(S1V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto', biasadj = TRU
 ### Model Selection
 Exponentially smoothed and ARIMA models were reviewed, with details in the
 appendix. The selected model for V1 is an `r arimaDisplay(AAS1V1l)` with drift
-and for V2 it is an `r arimaDisplay(AAS1V2l)` with a Box-Cox \(\lambda\) of
-`r AAS1V2l$lambda[[1]]`
+and a Box-Cox \(\lambda\) of `r AAS1V1l$lambda[[1]]`. For V2 it is an
+`r arimaDisplay(AAS1V2l)` with a Box-Cox \(\lambda\) of `r AAS1V2l$lambda[[1]]`.
 
 ### Forecasts
 The mean forecast values will be supplied in the attached Excel workbook. The
