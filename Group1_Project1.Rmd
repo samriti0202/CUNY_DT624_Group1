@@ -12,6 +12,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(readxl)
+library(openxlsx)
 library(fpp2)
 library(urca)
 library(ggplot2)
@@ -104,9 +105,9 @@ ETSS1V2l <- ets(S1V2, model = 'ZZZ', ic = 'aicc', lambda = 'auto',
 
 ### Model Selection
 Exponentially smoothed and ARIMA models were reviewed, with details in the
-appendix. The selected model for V1 is an ARIMA(`r V1p`, `r V1d`, `r V1q`)
-with drift and for V2 it is an ARIMA(`r V2lp`, `r V2ld`, `r V2lq`) with a
-Box-Cox \(\lambda\) of `r AAV2l$lambda[[1]]`
+appendix. The selected model for V1 is an ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`)
+with drift and for V2 it is an ARIMA(`r S1V2lp`, `r S1V2ld`, `r S1V2lq`) with a
+Box-Cox \(\lambda\) of `r AAS1V2l$lambda[[1]]`
 
 ### Forecasts
 The mean forecast values will be supplied in the attached Excel workbook. The
@@ -115,6 +116,18 @@ mean forecasts with error bands are plotted below
 autoplot(forecast(AAS1V1, h = 140)) + ylab("V1")
 autoplot(forecast(AAS1V2l, h = 140)) + ylab("V2")
 ```
+```{r S1Final, include=FALSE}
+S1Final <- data.table(Var01 = forecast(AAS1V1, h = 140)$mean,
+                 Var02 = forecast(AAS1V2l, h = 140)$mean)
+```
+
+## Series 2
+
+```{r S2Final, include=FALSE}
+S2Final <- data.table(Var02 = rep(NA_real_, 140),
+                      Var04 = rep(NA_real_, 140))
+```
+
 
 ## Series 3
 ### Series Visualization
@@ -225,6 +238,10 @@ The ARIMA model has an error of 3630, the lowest of the 3 models. All 3 models
 make very similar looking positions so we will select the ARIMA model as it has
 the lowest error across the validation period.
 
+```{r S3Final, include=FALSE}
+S3Final <- data.table(Var05 = forecast(arima_s3v1, h = 140)$mean,
+                      Var07 = forecast(arima_s3v2, h = 140)$mean)
+```
 ## Series 4
 ### Series Visualization
 
@@ -327,13 +344,17 @@ plot(forecast(S4V1_boxed_autoarima, h = 140), main = "Forecast for V1")
 plot(forecast(S4V2_boxed_outliers_autoarima, h = 140, biasadj = TRUE),
      main = "Forecast for V2")
 ```
-
+```{r S4Final, include=FALSE}
+S4Final <- data.table(Var01 = forecast(S4V1_boxed_autoarima, h = 140)$mean,
+                      Var02 = forecast(S4V2_boxed_outliers_autoarima,
+                                       h = 140)$mean)
+```
 ## Series 5
 ### Observations
 Variables 02 and 03 (V2 & V3 from now on) of Series 05 (S5 from now on) can each
 be considered a time series. As few transformations as possible will be applied
 to the data to maximize fidelity to the original source.
-```{r S1ts, echo=FALSE}
+```{r S5ts, echo=FALSE}
 S5ts <- ts(S05[-futureobs, 4:5])
 plot(S5ts, main = "Series 5")
 ```
@@ -343,7 +364,7 @@ be without drift. V3, in particular, looks very much like a random walk at first
 glance. This remains the case when they are plotted after center-scaling and
 normalization. V2 does exhibit some extreme variability and may be a candidate
 for Box-Cox transformation.
-```{r S1scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
+```{r S5scaleV, echo=FALSE, fig.width=8L, fig.height=6L}
 V2 <- scale(S05$Var02[-futureobs])
 V3 <- scale(S05$Var03[-futureobs])
 plot(V2, type = 'l', col = 'green4', main = "Series 05 Variables",
@@ -351,7 +372,7 @@ plot(V2, type = 'l', col = 'green4', main = "Series 05 Variables",
 lines(V3, col = 'blue')
 legend('topright', legend = c('V3', 'V2'), col = c('blue', 'green4'), lty = 1L)
 ```
-```{r SeriesFitting, include=FALSE}
+```{r S5Fitting, include=FALSE}
 S5V3missing <- which(is.na(S5ts[, 2]))
 S5V3med <- median(S5ts[, 2], na.rm = TRUE)
 S5V2 <- na.interp(S5ts[, 1])
@@ -389,17 +410,24 @@ ETSS5V3l <- ets(S5V3, model = 'ZZZ', ic = 'aicc', lambda = S5V3lam,
                 biasadj = TRUE)
 ```
 
-### Forecasts
-After the analysis detailed in the appendix, the selected models for the data
-are a ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`) model with
-\(\lambda=\)`r AAS5V2l$lambda[[1]]` for V2 and XXXX for V2. Plots of the
-forecasts are below.
+### Model Selection
+Exponentially smoothed and ARIMA models were reviewed, with details in the
+appendix. The selected model for V2 is an
+ARIMA(`r S5V2lp`, `r S5V2ld`, `r S5V2lq`) model with
+\(\lambda=\)`r AAS5V2l$lambda[[1]]`. The selected model for V3 is an
+ARIMA(`r S5V3p`, `r S5V3d`, `r S5V3q`).
 
-```{r S5forecastplots, echo=FALSE}
+### Forecasts
+The mean forecast values will be supplied in the attached Excel workbook. The
+mean forecasts with error bands are plotted below
+```{r S1forecastplots, echo=FALSE}
 autoplot(forecast(AAS5V2l, h = 140)) + ylab("V2")
 autoplot(forecast(AAS5V3, h = 140)) + ylab("V3")
 ```
-
+```{r S5Final, include=FALSE}
+S5Final <- data.table(Var02 = forecast(AAS5V2l, h = 140)$mean,
+                      Var03 = forecast(AAS5V3, h = 140)$mean)
+```
 ## Series 6
 ### Series Visualization
 
@@ -504,6 +532,26 @@ arima_s6v5
 The ARIMA model has an error of 482, slightly worse than the exponential
 smoothing model. It also has a higher level of complexity so it makes sense to
 select the simpler and more accurate model.
+```{r S6Final, include=FALSE}
+S6Final <- data.table(Var05 = forecast(ets_s6v5, h = 140)$mean,
+                      Var07 = forecast(ets_s6v7, h = 140)$mean)
+```
+```{r createExcel, include=FALSE}
+G1P1 <- createWorkbook(creator = "DT624_Summer2020_Group1")
+addWorksheet(G1P1, "Set for Class")
+writeData(G1P1, "Set for Class", DT)
+groups <- unique(DT$group)
+for (i in seq_len(6)) {
+  gName <- paste0('S0', i)
+  addWorksheet(G1P1, gName)
+  finalModel <- get(paste0('S', i, 'Final'))
+  namesFinal <- names(finalModel)
+  DT[group == gName][futureobs, namesFinal] <- finalModel
+  writeData(G1P1, gname, DT[group == gname])
+}
+saveWorkbook(G1P1, file = './DT625_Summer2020_Project1_Group1.xlsx',
+             overwrite = TRUE)
+```
 
 # Analytical Appendix
 ## Data Preprocessing
