@@ -125,7 +125,7 @@ S1Final <- data.table(Var01 = forecast(AAS1V1, h = 140)$mean,
 
 ```{r S2Final, include=FALSE}
 S2Final <- data.table(Var02 = rep(NA_real_, 140),
-                      Var04 = rep(NA_real_, 140))
+                      Var03 = rep(NA_real_, 140))
 ```
 
 
@@ -420,7 +420,7 @@ ARIMA(`r S5V3p`, `r S5V3d`, `r S5V3q`).
 ### Forecasts
 The mean forecast values will be supplied in the attached Excel workbook. The
 mean forecasts with error bands are plotted below
-```{r S1forecastplots, echo=FALSE}
+```{r S5forecastplots, echo=FALSE}
 autoplot(forecast(AAS5V2l, h = 140)) + ylab("V2")
 autoplot(forecast(AAS5V3, h = 140)) + ylab("V3")
 ```
@@ -547,7 +547,7 @@ for (i in seq_len(6)) {
   finalModel <- get(paste0('S', i, 'Final'))
   namesFinal <- names(finalModel)
   DT[group == gName][futureobs, namesFinal] <- finalModel
-  writeData(G1P1, gname, DT[group == gname])
+  writeData(G1P1, gName, DT[group == gName])
 }
 saveWorkbook(G1P1, file = './DT625_Summer2020_Project1_Group1.xlsx',
              overwrite = TRUE)
@@ -555,9 +555,6 @@ saveWorkbook(G1P1, file = './DT625_Summer2020_Project1_Group1.xlsx',
 
 # Analytical Appendix
 ## Data Preprocessing
-The data was converted to CSV, read into R, and then split into separate files
-by group.
-
 Each of the separate series was investigated for correlation, autocorrelation,
 and stationarity. For each data series, the last 140 periods are those needing
 the forecast. The first 1622 periods are the data.
@@ -586,6 +583,7 @@ V1 were replaced by linear interpolation.
 #### Outliers
 For V1, five points were identified as outliers using the `tsoutliers` function
 in the `forecast` package.
+
 ```{r, S1V1Out}
 plot(S1V1, main = "Outliers for V1", ylab = "V1")
 points(S1V1O$index, S1V1O$replacements, col = 'red', pch = 16L)
@@ -674,7 +672,7 @@ accuracy(ETSS1V1)
 
 More importantly, since they are fit on the exact same data, their AICc may
 be compared. For the ARIMA model it is `r AAS1V1$aicc` and for the ETS model, it
-is `r ETSV1$aicc`. The choice is clear, that the ARIMA model is superior.
+is `r ETSS1V1$aicc`. The choice is clear, that the ARIMA model is superior.
 
 #### Selection
 The ARIMA(`r S1V1p`, `r S1V1d`, `r S1V1q`) model will be used to forecast
@@ -685,7 +683,7 @@ Variable 01 for Series 01.
 There are no missing values for V2.
 
 #### Outliers
-Using the same technique, there are `r length(V2O$index)` outliers identified
+Using the same technique, there are `r length(S1V2O$index)` outliers identified
 for V2.
 ```{r, S1V2aOut}
 plot(S1V2, main = "Outliers for V1", ylab = "V1")
@@ -788,19 +786,20 @@ An ETS model with and without Box-Cox was also fit. These returned an
 #### Model Comparison and Selection
 The accuracy of the models are compared below.
 
+
 ```{r S1V2Acc, echo=FALSE}
 accS1V2 <- rbind(data.frame(accuracy(AAS1V2)),
                  data.frame(accuracy(AAS1V2l)),
                  data.frame(accuracy(ETSS1V2)),
                  data.frame(accuracy(ETSS1V2l)))
 row.names(accS1V2) <- c('ARIMA', 'ARIMA+BC', 'ETS', 'ETS+BC')
-knitr::kable(accS1V2, digits = 5L, format = 'pandoc')
+knitr::kable(accS1V2, digits = 3L, format = 'pandoc')
 ```
 
 The AICc may be compared within untransformed and Box-Cox transformed models,
 but not between them.
 
-```{r S5V3AICc, echo=FALSE}
+```{r S1V2AICc, echo=FALSE}
 aiccUTS1V2 <- data.frame(Models = c('ARIMA', 'ETS'),
                          AICc = c(AAS1V2$aicc, ETSS1V2$aicc))
 aiccBCS1V2 <- data.frame(Models = c('ARIMA+BC', 'ETS+BC'),
@@ -814,7 +813,7 @@ counterparts. Moreover, in comparable metrics (e.g. RMSE), the Box-Cox
 transformation shows better results (and better residuals).
 
 #### Selection
-The ARIMA(`r AAS1V2lp`, `r AAS1V2ld`, `r AAS1V2lq`) with lambda
+The ARIMA(`r S1V2lp`, `r S1V2ld`, `r S1V2lq`) with lambda
 `r AAS1V2l$lambda[[1]]` model will be used to forecast Variable 02 of Series 01.
 
 ## Series 3
@@ -1324,18 +1323,18 @@ with \(\lambda=\)`r S5V3lam`. Interestingly, the best-fitting model is a less
 parsimonius ARIMA(`r S5V3lp`, `r S5V3ld`, `r S5V3lq`). The added MA root is well
 within the circle, the others are similar to the untransformed model.
 
-```{r S1V2l_unitC2, echo=FALSE}
+```{r S5V3l_unitC2, echo=FALSE}
 autoplot(AAS5V3l)
 ```
 
 Its residuals are eminentl acceptable as well.
-```{r S1V2lresid, echo=FALSE, fig.width=10L, fig.height=8L}
+```{r S5V3lresid, echo=FALSE, fig.width=10L, fig.height=8L}
 checkresiduals(AAS5V3l)
 ```
 
 #### Exponential Smoothing State Space
 An ETS model with and without Box-Cox was also fit. These returned an
-`r ETSV3$method` and `r ETSV3l$method` respectively.
+`r ETSS5V3$method` and `r ETSS5V3l$method` respectively.
 
 #### Model Comparison and Selection
 The accuracy of the models are compared below.
@@ -1359,15 +1358,6 @@ aiccBCS5V3 <- data.frame(Models = c('ARIMA+BC', 'ETS+BC'),
                          AICc = c(AAS5V3l$aicc, ETSS5V3l$aicc))
 knitr::kable(aiccUTS5V3, digits = 3L, format = 'pandoc')
 knitr::kable(aiccBCS5V3, digits = 3L, format = 'pandoc')
-```
-
-The AICc values are also shown below for comparable models.
-```{r ETSAICc, echo=FALSE, warning=FALSE, message=FALSE}
-knitr::kable(data.frame(Name = c('ARIMA', ETSV2$method),
-           AICc = c(AAV2$aicc, ETSV2$aicc)))
-
-knitr::kable(data.frame(Name = c('ARIMA+BoxCox', ETSV2l$method),
-           AICc = c(AAV2l$aicc, ETSV2l$aicc)))
 ```
 
 In both cases, the ARIMA variants once again outperform their exponentially
