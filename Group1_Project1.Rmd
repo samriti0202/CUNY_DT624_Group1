@@ -549,7 +549,7 @@ for (i in seq_len(6)) {
   DT[group == gName][futureobs, namesFinal] <- finalModel
   writeData(G1P1, gName, DT[group == gName])
 }
-saveWorkbook(G1P1, file = './DT625_Summer2020_Project1_Group1.xlsx',
+saveWorkbook(G1P1, file = './DT624_Summer2020_Project1_Group1.xlsx',
              overwrite = TRUE)
 ```
 
