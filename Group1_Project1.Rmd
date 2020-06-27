@@ -137,18 +137,13 @@ S1Final <- data.table(Var01 = forecast(AAS1V1l, h = 140)$mean,
 
 ### Statistical & Exploratory Analysis of series S02            
 ```{r S2extrVar, echo=FALSE}
-
-
 S2 <- ts(S02[-futureobs, 4:5])
 
 S2v1 <- ts(S2[-futureobs,1])
 S2v2 <- ts(S2[-futureobs,2])
 
-
 summary(S2v1)
-
 summary(S2v2)
-
 ```
 
 Var02 has no missing values and Var03 has 4 missing values.        
@@ -166,24 +161,33 @@ hist(scale(S2v1),br=100,xlim=c(0,100))
 boxplot(S2v1)
 
 qqnorm(S2v1)
-
 qqline(S2v1)
-
 ```
 
-Looking at above plots and comparing with the below assumptions for univariate variable.                                  
+Looking at above plots and comparing with the below assumptions for univariate
+variable.                                  
 
-Fixed Location: If the fixed location assumption holds, then the run sequence plot will be flat and non-drifting.                             
-Fixed Variation: If the fixed variation assumption holds, then the vertical spread in the run sequence plot will be the approximately the same over the entire horizontal axis.                        
-Randomness: If the randomness assumption holds, then the lag plot will be structureless and random.                 
-Fixed Distribution: If the fixed distribution assumption holds, in particular if the fixed normal distribution holds, then the histogram will be bell-shaped, and the normal probability plot will be linear.                              
+Fixed Location: If the fixed location assumption holds, then the run sequence 
+plot will be flat and non-drifting.          
 
-In Var02 case, the run sequence plot shows the order that the data are presented in 
-the file is NOT random and also the variance in the data is eventually not much towards
-the end i.e. it is flat and drift is nearly constant. Lag plot has some structure,
-i.e., mostly a  big clusters is  visible which means it is not random. Histogram shows the
-presence of outliers. The histogram is not symmetrical, nor does it  looks like a 
-bell-curve and it is right skewed. The normal QQ plot is not a straight line.
+Fixed Variation: If the fixed variation assumption holds, then the vertical 
+spread in the run sequence plot will be the approximately the same over the
+entire horizontal axis.                         
+
+Randomness: If the randomness assumption holds, then the lag plot will be 
+structureless and random.                 
+
+Fixed Distribution: If the fixed distribution assumption holds, in particular if 
+the fixed normal distribution holds, then the histogram will be bell-shaped, and
+the normal probability plot will be linear.                              
+
+In Var02 case, the run sequence plot shows the order that the data are presented
+in the file is NOT random and also the variance in the data is eventually not 
+much towards end i.e. it is flat and drift is nearly constant. Lag plot has some
+structure i.e. mostly a  big clusters is  visible which means it is not random.
+Histogram shows the presence of outliers. The histogram is not symmetrical, 
+nor does it looks like a bell-curve and it is right skewed. The normal QQ plot 
+is not a straight line.
 
 #### Exploratory Analysis of Var03 in series S02
 ```{r S2ExpAnlV3, echo=FALSE}
