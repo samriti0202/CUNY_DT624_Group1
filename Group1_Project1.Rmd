@@ -3,13 +3,13 @@ title: "CUNY DT 624"
 author: 'Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan'
 date: "Summer 2020"
 output:
-  word_document:
-    toc: yes
-    toc_depth: 4
   html_document:
     df_print: paged
     toc: yes
     toc_depth: '4'
+  word_document:
+    toc: yes
+    toc_depth: 4
 subtitle: Project 1
 ---
 
@@ -425,8 +425,8 @@ The second series exhibited many outliers that were quite extreme. These
 outliers were replaced with more reasonable values using the `tsclean` function.
 
 #### Variance Stabilization
-Both series did not exhibit a changes in variance, so a Box-Cox transformation
-was deemed unnecessary.
+Both series exhibited small changes in variance, so a Box-Cox transformation
+was performed on both series.
 
 #### Stationarity
 
@@ -475,9 +475,9 @@ S4V2_boxed_outliers_autoarima = auto.arima(S4V2_clean, ic = 'aicc',
 The forecast for both series can be seen below.
 
 ```{r, echo=FALSE}
-autoplot(forecast(S4V1_boxed_autoarima, h = 140), main = "Forecast for V1")
+autoplot(forecast(S4V1_boxed_autoarima, h = 140), main = "Forecast of V1 from ARIMA(0,1,1)")
 autoplot(forecast(S4V2_boxed_outliers_autoarima, h = 140, biasadj = TRUE),
-     main = "Forecast for V2")
+     main = "Forecast of V2 from ARIMA(3,1,1)")
 ```
 ```{r S4Final, include=FALSE}
 S4Final <- data.table(Var01 = forecast(S4V1_boxed_autoarima, h = 140)$mean,
