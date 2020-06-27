@@ -148,9 +148,6 @@ appears to be missing values towards the very end of the series.
 The data appear to have a strong trend but no clear seasonal pattern, which will
 aid us in our modeling in the future.
 
-### Missing Values
-Missing values were imputed linearly to create a smooth timeseries.
-
 ```{r s3NA-exec, echo=F, include=F}
 sum(is.na(S3))
 
@@ -161,12 +158,6 @@ S3 <- ts(sapply(S3, function(X) approxfun(seq_along(X), X)(seq_along(X))))
 
 sum(is.na(S3))
 ```
-
-### Outliers
-The series have a single outlier between them which is also apparent in the plot
-of the timeseries above. However, since the series are so similar and this is
-one of the defining differences of the series, I think it would be unwise to
-remove this outlier.
 
 ### Baseline Model
 Since the data has a clear trend component but no seasonality component, a
@@ -183,20 +174,6 @@ rwf(s3v2, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 The cumulative error for our baseline model is 20.09, which is meaningless in and
 of itself but will be an excellent comparison point for other models.
 
-### Decomposition
-
-```{r}
-s3v1 <- ts(s3v1, frequency = 365)
-
-s3v1 %>% stl(s.window = 'periodic') %>% autoplot()
-```
-
-The data may have some seasonal aspect to it on the daily time frame. Since we
-are unsure how the data was collected and what it represents we cannot confirm
-this. We chose not to model with the seasonal aspect since the there is no
-correlation between the data and itself 365 timesteps ago, indicating that last
-year's data is not predictive of next years.
-
 ### Exponential Smoothing model
 
 Due the the nature of the data, a linear trend model is a natural choice as an
@@ -212,16 +189,6 @@ fit2 %>% forecast(h = 140) %>% autoplot() + ylab('Var07')
 
 Exponential Smoothing models achieved an error of 20.05, a slight improvement on
 the baseline model.
-
-### Differencing Data
-
-The data is clearly non stationary which means it is not appropriate for ARIMA
-modeling. We can solve this by taking the first (or potentially second)
-difference between observations.
-
-The new differenced data is stationary and therefore appropriate for ARIMA
-modeling. Diagnostic tests suggest either an ARIMA(1,1,0) model or an
-ARIMA(2,1,0) model.
 
 ### ARIMA Model
 
@@ -422,21 +389,9 @@ S5Final <- data.table(Var02 = forecast(AAS5V2l, h = 140)$mean,
 ## Series 6
 ### Series Visualization
 
-```{r}
-S6 <- ts(S06[-futureobs, 6:7])
-autoplot(S6) + ylab('Value') + xlab('Time') + ggtitle('Var05 vs Var07')
-```
-
-Both series have an extremely clear outlier that will need to be addressed. Both
-series also appear to be almost 100% correlated. The data has a clear trend but
-no visibly clear seasonal pattern.
-
-### Missing Values
-
-As per most other series, missing values were imputed linearly to maintain a
-consistent time series.
-
 ```{r s6NA, echo=F, include=F}
+S6 <- ts(S06[-futureobs, 6:7])
+
 sum(is.na(S6))
 
 sum(is.na(S6[,1]))
@@ -447,22 +402,16 @@ S6 <- ts(sapply(S6, function(X) approxfun(seq_along(X), X)(seq_along(X))))
 sum(is.na(S6))
 ```
 
-### Outliers
 
-Before doing any outlier analysis it is very clear that there is a large outlier
-that will need to be fixed in order to create stable predictions for this
-timeseries.
-
-Here we can see the repaired timeseries with outliers removed.
-
-```{r}
+```{r s6outlier, echo = F}
 S6_orig <- S6
 S6 <- ts(sapply(S6, tsclean))
 S6 %>% autoplot()
 ```
 
-We get a much better view of the time series as a whole, not obscured by the
-huge outlier.
+Both series have an extremely clear outlier that will has been removed. Both
+series also appear to be almost 100% correlated. The data has a clear trend but
+no visibly clear seasonal pattern.
 
 ### Baseline Model
 
@@ -479,21 +428,6 @@ rwf(s6v7, h = 140, drift = T) %>% autoplot() + ylab('Var07')
 
 The baseline model has an error of 16.72. This is not meaningful in and of
 itself but rather as a comparison to other models.
-
-### Decomposition
-
-```{r S6Decomposition}
-s6v5 <- ts(s6v5, frequency = 365)
-
-s6v5 %>% stl(s.window = 'periodic') %>% autoplot()
-```
-
-It is unclear what the correct time period for this data should be as we have no
-knowledge of what the data is modeling, so we have tested annual, quarterly,
-monthly, weekly, and daily seasonality to see if the data fits any of these
-models. Although there is some seasonal pattern on the daily timeframe, the data
-is not predictive of itself 1 year in advance so we will not model using
-seasonality.
 
 ### Exponential Smoothing
 
@@ -882,6 +816,21 @@ data.frame(S3) %>% ggplot() +
 Due to this outlier being one of the defining differences between the two
 timeseries we will not be adjusting the outlier to its recommended replacement.
 
+### Decomposition
+
+```{r}
+s3v1 <- ts(s3v1, frequency = 365)
+
+s3v1 %>% stl(s.window = 'periodic') %>% autoplot()
+Pacf(s3v1, 370)
+```
+
+The data may have some seasonal aspect to it on the daily time frame. Since we
+are unsure how the data was collected and what it represents we cannot confirm
+this. We chose not to model with the seasonal aspect since the there is no
+correlation between the data and itself 365 timesteps ago, indicating that last
+year's data is not predictive of next years.
+
 ### Calculating Error
 To calculate the error for each model, we created a model at each timestep using
 previous data and predict one timestep ahead. We then compare the predicted
@@ -914,7 +863,7 @@ ets_sse
 ### ARIMA Parameter Selection
 The ACF plot indicates a strong trend component to the data. the PACF plot
 indicates that there is little to no seasonality as entries far in the past are
-not predictive of entries in the future. I also used a PACF plot of length 300
+not predictive of entries in the future. We also used a PACF plot of length 300
 to check for any daily seasonality but it appears there is no strong daily
 seasonality on the yearly scale either.
 
@@ -926,13 +875,22 @@ kpss.test(diff(s3v1))
 
 diff(s3v1) %>% autoplot()
 acf(s3v1)
-Pacf(s3v1, 370)
 ```
 
 The decreasing ACF values coupled with the large spike in the PACF values at 1
 is indicative of an AR(1) model, leading us to believe that the best ARIMA model
 would be an ARIMA(1,1,0) model. Also, the PACF values discount the daily
 seasonality we found as there is no spike in the PACF graph near 365.
+
+### Differencing Data
+
+The data is clearly non stationary which means it is not appropriate for ARIMA
+modeling. We can solve this by taking the first (or potentially second)
+difference between observations.
+
+The new differenced data is stationary and therefore appropriate for ARIMA
+modeling. Diagnostic tests suggest either an ARIMA(1,1,0) model or an
+ARIMA(2,1,0) model.
 
 ### ARIMA Error
 ```{r S3ARIMA_2, echo=TRUE}
@@ -1435,6 +1393,21 @@ data.frame(S6_orig) %>% ggplot() +
   xlab('Time') + ylab('Values') +
   ggtitle('Var05 With Outlier and Replacement Shown')
 ```
+
+### Decomposition
+
+```{r S6Decomposition}
+s6v5 <- ts(s6v5, frequency = 365)
+
+s6v5 %>% stl(s.window = 'periodic') %>% autoplot()
+```
+
+It is unclear what the correct time period for this data should be as we have no
+knowledge of what the data is modeling, so we have tested annual, quarterly,
+monthly, weekly, and daily seasonality to see if the data fits any of these
+models. Although there is some seasonal pattern on the daily timeframe, the data
+is not predictive of itself 1 year in advance so we will not model using
+seasonality.
 
 ### Calculating Error
 Error is calculated using hold one out validation where a model is build on all
