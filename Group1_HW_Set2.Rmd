@@ -97,9 +97,7 @@ For repeatability, a random seed will be set.
 
 ```{r KJ63c1}
 set.seed(674835)
-trainObs <- sample.int(n = dim(CMP)[[1]], size = dim(CMP)[[1]] %/% 2,
-                       replace = FALSE, )
-preProcess = c('knnImpute')
+trainObs <- sample.int(n = dim(CMP)[[1]], size = dim(CMP)[[1]] %/% 2)
 trainCMPX <- as.matrix(CMP[trainObs, -1])
 trainCMPY <- unlist(CMP[trainObs, 1])
 testCMPX <- as.matrix(CMP[-trainObs, -1])
@@ -121,7 +119,7 @@ supplied below.
 
 ```{r KJ63c2}
 fitControl <- trainControl(method = "repeatedcv", number = 11L, repeats = 5L)
-tGrid <- expand.grid(fraction = seq(0.028, 0.029, 0.0001),
+tGrid <- expand.grid(fraction = seq(0.028, 0.029, 1e-4),
                      lambda = c(0, 1e-4, 1e-3))
 elastiFit <- train(x = trainCMPX, y = trainCMPY, method = 'enet',
                    preProcess = c('zv', 'nzv', 'knnImpute'),
@@ -164,7 +162,7 @@ eFitCoef <- predict(eFit, s = elastiFit$bestTune[[1]], mode = 'fraction',
                     type = 'coefficients')$coefficients
 TopN <- names(sort(eFitCoef[eFitCoef > 0], decreasing = TRUE))
 knitr::kable(sort(eFitCoef[eFitCoef > 0], decreasing = TRUE),
-             col.names = "Fit Coef")
+             col.names = "Fit Coef", format = 'pandoc')
 ```
 
 For this fit, the **Manufacturing** components completely dominate the list.
