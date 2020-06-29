@@ -30,15 +30,15 @@ Submitted: :heavy_check_mark:
 |Task|Student|Completed|
 |----|-------|:-------:|
 |S01|Avraham Adler|:heavy_check_mark:|
-|S02|Vishal Arora||
+|S02|Vishal Arora|:heavy_check_mark:|
 |S03|Sam Bellows|:heavy_check_mark:|
 |S04|Austin Chan|:heavy_check_mark:|
 |S05|Avraham Adler|:heavy_check_mark:|
 |S06|Sam Bellows|:heavy_check_mark:|
-|Compilation|Group||
-|Summary|Group||
+|Compilation|Group|:heavy_check_mark:|
+|Summary|Group|:heavy_check_mark:|
 
-Submitted: :x:
+Submitted: :heavy_check_mark:
  
 ### HW Set 2: Due 7/19/2020
 |Problem|Student|Completed|
