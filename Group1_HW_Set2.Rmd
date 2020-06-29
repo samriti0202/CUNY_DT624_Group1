@@ -1,0 +1,210 @@
+---
+title: "CUNY DT 624"
+subtitle: "Homework Set 2"
+author: "Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan"
+date: "Summer 2020"
+output:
+  word_document:
+  toc: true
+toc_depth: 3
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(RANN)
+library(elasticnet)
+library(data.table)
+```
+
+# KJ Question 6.3
+## Question
+A chemical manufacturing process for a pharmaceutical product was
+discussed in Sect. 1.4. In this problem, the objective is to understand the
+relationship between biological measurements of the raw materials (predictors),
+measurements of the manufacturing process (predictors), and the response of
+product yield. Biological predictors cannot be changed but can be used to assess
+the quality of the raw material before processing. On the other hand,
+manufacturing process predictors can be changed in the manufacturing process.
+Improving product yield by 1\% will boost revenue by approximately one hundred
+thousand dollars per batch:
+
+ (a) Start R and use these commands to load the data:
+     
+     ```
+     library(AppliedPredictiveModeling)
+     data(chemicalManufacturingProcess)
+     ```
+     
+     The matrix processPredictors contains the 57 predictors (12 describing the
+     input biological material and 45 describing the process predictors) for the
+     176 manufacturing runs. yield contains the percent yield for each run.
+ 
+ (b) A small percentage of cells in the predictor set contain missing values.
+ Use an imputation function to fill in these missing values (e.g., see Sect.
+ 3.8).
+ 
+ (c) Split the data into a training and a test set, pre-process the data, and
+ tune a model of your choice from this chapter. What is the optimal value of the
+ performance metric?
+ 
+ (d) Predict the response for the test set. What is the value of the performance
+ metric and how does this compare with the resampled performance metric on the
+ training set?
+ 
+ (e) Which predictors are most important in the model you have trained? Do
+ either the biological or process predictors dominate the list?
+ 
+ (f) Explore the relationships between each of the top predictors and the
+ response. How could this information be helpful in improving yield in future
+ runs of the manufacturing process?
+ 
+## Answers
+The excellent `caret` package will be used to coordinate the supervised learning,
+together with any necessary packages. For convenience, data frames may be turned
+into data.tables.
+
+In general, it is considered optimal to split the data into three pieces:
+training, validation, and testing. Where the training set is used to train a
+model of a given type, the validation set is used to estimate the prediction
+error for the model, and the test set only brought out at the end to estimate
+general error (Hastie et al 2001, p. 222). However, as we are only supposed to
+pick one model for this exercise, the data will be broken into two pieces.
+### Part (a)
+```{r KJ63a}
+library(AppliedPredictiveModeling)
+data(ChemicalManufacturingProcess)
+```
+
+### Part (b)
+There are data fields with missing observations.
+
+```{r KJ63b}
+CMP <- as.data.table(ChemicalManufacturingProcess)
+knitr::kable(unlist(CMP[, lapply(.SD, function (x) {sum(is.na(x))})])[
+                          which(CMP[, lapply(.SD, function (x) {sum(is.na(x))})
+                                    ] > 0)],
+             col.names = "NumMissing", format = 'pandoc')
+```
+
+The values will be imputed using K-nearest neighbors which also automatically
+implies a centering and scaling of the data. If imputation is desired without
+centering and scaling, one may use a bagged-tree imputation method instead.
+
+### Part (c)
+The data will be divided equally, and randomly, into a training and test set.
+For repeatability, a random seed will be set.
+
+```{r KJ63c1}
+set.seed(674835)
+trainObs <- sample.int(n = dim(CMP)[[1]], size = dim(CMP)[[1]] %/% 2,
+                       replace = FALSE, )
+preProcess = c('knnImpute')
+trainCMPX <- as.matrix(CMP[trainObs, -1])
+trainCMPY <- unlist(CMP[trainObs, 1])
+testCMPX <- as.matrix(CMP[-trainObs, -1])
+testCMPY <- unlist(CMP[-trainObs, 1])
+```
+
+The model selected from the chapter will be an elastic net, combining the (best)
+features of ridge regression and the feature selection of lasso. The tuning will
+be based on a five-time repeated 11-fold cross validation, as both the training
+and testing data have 88 observations. The tuning will use
+RMSE as the performance metric to optimize.
+
+Furthermore, initial training showed that there were columns with zero or
+near-zero variance. These will be pre-processed as well. Lastly, the default
+in caret is to provide a grid of three values for the ridge lambda and three for
+the \(L_1\) fraction used for the lasso component. For this problem, a large
+number of very fine mesh grids were tried, with one zoomed in on the best result
+supplied below.
+
+```{r KJ63c2}
+fitControl <- trainControl(method = "repeatedcv", number = 11L, repeats = 5L)
+tGrid <- expand.grid(fraction = seq(0.028, 0.029, 0.0001),
+                     lambda = c(0, 1e-4, 1e-3))
+elastiFit <- train(x = trainCMPX, y = trainCMPY, method = 'enet',
+                   preProcess = c('zv', 'nzv', 'knnImpute'),
+                   trControl = fitControl, tuneGrid = tGrid)
+plot(elastiFit)
+```
+
+The value of the performance at the selected optimal point is an RMSE of
+`r min(elastiFit$results$RMSE)` at an \(L_1 \) fraction of
+`r elastiFit$bestTune[[1]]` and a ridge lambda of `r elastiFit$bestTune[[2]]`.
+Note that this is thus actually a true lasso fit!
+
+### Part (d)
+```{r KJ63d}
+elastiPred <- predict(elastiFit, testCMPX)
+testResult <- defaultSummary(data.frame(obs = testCMPY,  pred = elastiPred))
+```
+
+The RMSE for the test data set is `r testResult[[1]]` which is greater than that
+for the training set. This is to be expected, as there is bound to be be some
+overfitting on the training set, despite the use of cross-validation.
+
+### Part (e)
+Unfortunately, the elasticnet implementation in `caret` does not allow for easy
+extraction of the coefficients. What needs to be done is to run the `enet`
+fitting directly from its package with the values found by `caret` and then
+extract the coefficient. In order to obtain the same model, the same
+pre-processing needs to be done to the training and test data.
+
+```{r KJ63e}
+eFit <- enet(x = predict(preProcess(trainCMPX,
+                                    method= c('zv', 'nzv', 'knnImpute')),
+                         trainCMPX), y  = trainCMPY, lambda = 0)
+eFitpred <- predict(eFit, newx = predict(preProcess(trainCMPX,
+                                    method= c('zv', 'nzv', 'knnImpute')),
+                         testCMPX), s = elastiFit$bestTune[[1]],
+                         mode = 'fraction', type = 'fit')
+all.equal(eFitpred$fit, elastiPred)
+eFitCoef <- predict(eFit, s = elastiFit$bestTune[[1]], mode = 'fraction',
+                    type = 'coefficients')$coefficients
+TopN <- names(sort(eFitCoef[eFitCoef > 0], decreasing = TRUE))
+knitr::kable(sort(eFitCoef[eFitCoef > 0], decreasing = TRUE),
+             col.names = "Fit Coef")
+```
+
+For this fit, the **Manufacturing** components completely dominate the list.
+
+### Part (f)
+```{r KJ63f, fig.height=8L, fig.width=8L}
+par(mfrow = c(3, 3))
+for (i in seq_along(TopN)) {
+  plot(x = unlist(CMP[, .SD, .SDcols = TopN[i]]), CMP$Yield,
+       xlab = TopN[i], ylab = "Yield")
+}
+par(mfrow = c(1, 1))
+```
+
+It seems that only the first variable demonstrates any immediately recognizable
+relationship between it and yield, which accounts for its coefficient. The
+second-highest coefficient shows some relationship. The next three could be
+outlier examples in Anscombe's coefficient. Variables 6 through 9 almost look
+like random residuals.
+
+At this point, I would suggest that another model family should be investigated
+and test-set behavior should be compared.
+
+That being said, what we can learn from this model is that process 32 and
+probably process 09 are positively correlated with yield and attention should be
+paid to those processess to maximize yield.
+
+# KJ Question 7.2
+
+# KJ Question 7.5
+
+# KJ Question 8.1
+
+# KJ Question 8.2
+
+# KJ Question 8.3
+
+# KJ Question 8.7
+
+# References
+ * Hastie, T.; Tibshirani, R. & Friedman, J. (2001),
+ *The Elements of Statistical Learning*, Springer New York Inc.,
+ New York, NY, USA.

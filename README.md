@@ -43,7 +43,7 @@ Submitted: :heavy_check_mark:
 ### HW Set 2: Due 7/19/2020
 |Problem|Student|Completed|
 |-------|-------|:-------:|
-|KJ 6.3 |Avraham Adler| |
+|KJ 6.3 |Avraham Adler|:heavy_check_mark:|
 |KJ 7.2 | | |
 |KJ 7.5 | | |
 |KJ 8.1 | | |
