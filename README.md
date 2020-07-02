@@ -44,7 +44,7 @@ Submitted: :heavy_check_mark:
 |Problem|Student|Completed|
 |-------|-------|:-------:|
 |KJ 6.3 |Avraham Adler|:heavy_check_mark:|
-|KJ 7.2 | | |
+|KJ 7.2 |Sam Bellows| |
 |KJ 7.5 | | |
 |KJ 8.1 | | |
 |KJ 8.2 | | |
