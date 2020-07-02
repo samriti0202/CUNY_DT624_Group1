@@ -74,13 +74,13 @@ pick one model for this exercise, the data will be broken into two pieces.
 ```{r KJ63a}
 library(AppliedPredictiveModeling)
 data(ChemicalManufacturingProcess)
+CMP <- as.data.table(ChemicalManufacturingProcess)
 ```
 
 ### Part (b)
 There are data fields with missing observations.
 
 ```{r KJ63b}
-CMP <- as.data.table(ChemicalManufacturingProcess)
 knitr::kable(unlist(CMP[, lapply(.SD, function (x) {sum(is.na(x))})])[
                           which(CMP[, lapply(.SD, function (x) {sum(is.na(x))})
                                     ] > 0)],
@@ -193,6 +193,63 @@ paid to those processess to maximize yield.
 # KJ Question 7.2
 
 # KJ Question 7.5
+## Question
+Exercise 6.3 describes data for a chemical manufacturing process. Use the same
+data imputation, data splitting, and pre-processing steps as before and train
+several nonlinear regression models.
+
+  (a) Which nonlinear regression model gives the optimal resampling and test
+  set performance?
+  (b) Which predictors are most important in the optimal nonlinear regression
+  model? Do either the biological or process variables dominate the list? How do
+  the top ten important predictors compare to the top ten predictors from the
+  optimal linear model?
+  (c) Explore the relationships between the top predictors and the response for
+  the predictors that are unique to the optimal nonlinear regression model. Do
+  these plots reveal intuition about the biological or process predictors and
+  their relationship with yield?
+  
+## Answers
+### Part a
+As several models are requested, yet the same train/test split are mandated, the
+"best" model will have to be selected using cross-validation on the training set
+instead of having a tripartite training/testing/validation schema as per ESL.
+
+The models from chapter 7[^kj75a] which will be investigated will include __ __ __
+
+Similar to question 6.3, many versions of each model were fit. The one which is
+displayed is usually a model whose tuning grid is focused on the area of best
+behavior.[^kj75b] Seeds will be set before each call to ensure the repeatability
+of the results.
+
+[^kj75a]: My hunch is that this data will respond best to a random forest or
+boosted/bagged tree approach, but that is chapter 8.
+[^kj75b]: This is a practical accomodation necesary to reduce the load on both
+the machines and the times of the group members.
+
+```{r KJ75preprocess, echo=FALSE}
+set.seed(674835)
+trainObs <- sample.int(n = dim(CMP)[[1]], size = dim(CMP)[[1]] %/% 2)
+trainCMPX <- as.matrix(CMP[trainObs, -1])
+trainCMPY <- unlist(CMP[trainObs, 1])
+testCMPX <- as.matrix(CMP[-trainObs, -1])
+testCMPY <- unlist(CMP[-trainObs, 1])
+```
+
+#### Simple Neural Network
+
+```{r KJ75aNN, include=FALSE}
+if (require(doParallel)) {
+  cl <- parallel::makePSOCKcluster(8L)
+  registerDoParallel(cl)
+}
+fitControl <- trainControl(method = "repeatedcv", number = 11L, repeats = 5L,
+                           allowParallel = TRUE)
+
+nnFit <- train(x = trainCMPX, y = trainCMPY, method = 'nnet',
+                   preProcess = c('zv', 'nzv', 'knnImpute'),
+                   trControl = fitControl, tuneLength =  10L, trace = FALSE)
+```
 
 # KJ Question 8.1
 
