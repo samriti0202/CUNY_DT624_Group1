@@ -12,11 +12,12 @@ toc_depth: 3
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(caret)
+library(doParallel)
 library(RANN)
 library(elasticnet)
 library(data.table)
+cl <- parallel::makePSOCKcluster((parallel::detectCores() * 0.75))
 ```
-
 # KJ Question 6.3
 ## Question
 A chemical manufacturing process for a pharmaceutical product was
@@ -239,16 +240,13 @@ testCMPY <- unlist(CMP[-trainObs, 1])
 #### Simple Neural Network
 
 ```{r KJ75aNN, include=FALSE}
-if (require(doParallel)) {
-  cl <- parallel::makePSOCKcluster(8L)
-  registerDoParallel(cl)
-}
 fitControl <- trainControl(method = "repeatedcv", number = 11L, repeats = 5L,
                            allowParallel = TRUE)
-
+nnGrid <- expand.grid(size = 1:3, decay =seq(0, 2e-5, 1e-6))
+set.seed(12)
 nnFit <- train(x = trainCMPX, y = trainCMPY, method = 'nnet',
-                   preProcess = c('zv', 'nzv', 'knnImpute'),
-                   trControl = fitControl, tuneLength =  10L, trace = FALSE)
+               preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = nnGrid, trace = FALSE)
 ```
 
 # KJ Question 8.1
@@ -259,6 +257,9 @@ nnFit <- train(x = trainCMPX, y = trainCMPY, method = 'nnet',
 
 # KJ Question 8.7
 
+```{r stopCluster, include=FALSE}
+parallel::stopCluster(cl)
+```
 # References
  * Hastie, T.; Tibshirani, R. & Friedman, J. (2001),
  *The Elements of Statistical Learning*, Springer New York Inc.,
