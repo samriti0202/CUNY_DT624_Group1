@@ -163,9 +163,9 @@ For this fit, the **Manufacturing** components completely dominate the list.
 ### Part (f)
 ```{r KJ63f, fig.height=8L, fig.width=10L}
 par(mfrow = c(4, 3))
-for (i in seq_along(t10N)) {
-  plot(x = unlist(CMP[, .SD, .SDcols = t10N[i]]), CMP$Yield,
-       xlab = t10N[i], ylab = "Yield")
+for (i in seq_along(t10EN)) {
+  plot(x = unlist(CMP[, .SD, .SDcols = t10EN[i]]), CMP$Yield,
+       xlab = t10EN[i], ylab = "Yield")
 }
 par(mfrow = c(1, 1))
 ```
@@ -265,12 +265,11 @@ modelC[3, ] <- data.frame(model = "MARS",
 
 #### Support Vector Machine   
 ```{r KJ75aSVM}
-svmRGrid <- expand.grid(C = seq(124.60, 124.85, 0.01),
-                        sigma = seq(4.39e-4, 4.41e-4, 1e-6))
+# Very subject to overfitting. Grid searches worked more poorly.
 set.seed(12)
-svmFit <- train(x = trainCMPX, y = trainCMPY, method = 'svmRadialSigma',
+svmFit <- train(x = trainCMPX, y = trainCMPY, method = 'svmRadial',
                 preProcess = c('zv', 'nzv', 'knnImpute'),
-                trControl = fitControl, tuneGrid = svmRGrid)
+                trControl = fitControl, tuneLength = 10L)
 modelC[4, ] <- data.frame(model = "Support Vector Machine",
                           TrnErr = RMSE(predict(svmFit, trainCMPX), trainCMPY),
                           TstErr = RMSE(predict(svmFit, testCMPX), testCMPY))
@@ -314,8 +313,10 @@ knitr::kable(modelC[order(modelC$TstErr), ], format = 'pandoc', digits = 3L)
 Not unexpectedly, there are models which did significantly better on the
 training set than on the testing set. This exemplifies the concept of
 overfitting, which can occur even with the robust levels of repeated
-cross-validation performed. Interestingly, the elastic net model performed
-very well, comparatively. The simple neural network failed utterly.
+cross-validation performed. The vector machine families performed the best, with
+the Bayesian version's parsimony probably contributing to its slightly better
+performance on the out-of-sample test set. Interestingly, the elastic net model
+performed very well, comparatively. The simple neural network failed utterly.
 
 ### Part (b)
 ```{r KJ75b1}
@@ -328,15 +329,29 @@ knitr::kable(t10NL, row.names = FALSE, format = 'pandoc', digits = 2)
 
 The variable importance metric is exactly the same. Looking in to the code,
 neither `rvm` nor `elasticnet` have special methods for calculating variable
-importance, so they both rely on the default method which uses a loess smoother
-fit between the outcome and the predictor. The importance is a scaled value of
-the \(R^2\) for the loess model with the parameter versus the intercept-only
-null model. Note this different from the best-fitting MARS model which has a
-mars-specific method for calculating variable importance.
+importance, so they both rely on the default model-free method which uses a
+loess smoother fit between the outcome and the predictor. The default importance
+is a scaled value of the \(R^2\) for the loess model with the parameter versus
+the intercept-only null model. This is a known issue with the caret
+package.[^kj75b1] Furthermore, the results of a relevance support model are
+relevance vectors and alphas, which can not be directly interpreted as
+regression coefficients.
+
+[^kj75b1]: See https://bit.ly/2YU1fGL where it appears the author or maintainer
+of `caret` responds. Note the StackOverflow name and the name of the canonical
+`caret` website.
+
+Note this phenomenon does not occur with the best-fitting MARS model which has
+a MARS-specific method for calculating variable importance.
 
 ```{r KJ75b2}
 head(varImp(marsFit)$importance, 10)
 ```
+
+### Part (c)
+I presume that Kuhn & Johnson expected a different outcome, as the best
+performing non-linear model has the same levels of variable importance as does
+the best supporting linear model, due to the implementations.
 
 # KJ Question 8.1
 
