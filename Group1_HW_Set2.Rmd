@@ -201,16 +201,15 @@ As several models are requested, yet the same train/test split are mandated, the
 "best" model will have to be selected using cross-validation on the training set
 instead of having a tripartite training/testing/validation schema as per ESL.
 
-The models from chapter 7[^kj75a] which will be investigated will include __ __ __
-
-Similar to question 6.3, many versions of each model were fit. The one which is
-displayed is usually a model whose tuning grid is focused on the area of best
-behavior.[^kj75b] Seeds will be set before each call to ensure the repeatability
-of the results.
+Various models from chapter 7 will be investigated.[^kj75a] Similar to question
+6.3, many versions of each model were fit. The one which is displayed is usually
+a model whose tuning grid is focused on the area of best behavior.[^kj75b] Seeds
+will be set before each call to ensure the repeatability of the results. The
+metric used for tuning and comparison will be **RMSE**.
 
 [^kj75a]: My hunch is that this data will respond best to a random forest or
 boosted/bagged tree approach, but that is chapter 8.
-[^kj75b]: This is a practical accomodation necesary to reduce the load on both
+[^kj75b]: This is a practical accommodation necessary to reduce the load on both
 the machines and the times of the group members.
 
 ```{r KJ75preprocess, echo=FALSE}
@@ -227,13 +226,15 @@ testCMPY <- unlist(CMP[-trainObs, 1])
 ```{r KJ75aNN, include=FALSE}
 fitControl <- trainControl(method = "repeatedcv", number = 11L, repeats = 5L,
                            allowParallel = TRUE)
-nnGrid <- expand.grid(size = 1:3, decay =seq(0, 2e-5, 1e-6))
+nnGrid <- expand.grid(decay = c(0, 1e-2, 1e-1), size = 1:4, bag = c(FALSE, TRUE))
 set.seed(12)
-nnFit <- train(x = trainCMPX, y = trainCMPY, method = 'nnet',
+nnFit <- train(x = trainCMPX, y = trainCMPY, method = 'avNNet',
                preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
                tuneGrid = nnGrid, trace = FALSE)
+
 ```
 
+The optimal model's statistics on the traun
 #### Bayesian Neural Network
 
 ```{r KJ75aBNN, include=FALSE}
@@ -266,13 +267,25 @@ svmFit <- train(x = trainCMPX, y = trainCMPY, method = 'svmRadialSigma',
 
 #### Relevance Vector Machine   
 
-```{r KJ75aSVM, include=FALSE}
+```{r KJ75aRVM, include=FALSE}
 rvmRGrid <- expand.grid(sigma = seq(5e-6, 8e-6, 5e-8))
 set.seed(12)
 rvmFit <- train(x = trainCMPX, y = trainCMPY, method = 'rvmRadial',
                preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
                tuneGrid = rvmRGrid)
 ```
+
+#### K-Nearest Neighbors
+
+```{r KJ75aKNN, include=FALSE}
+knnGrid <- expand.grid(k = 5:10)
+set.seed(12)
+knnFit <- train(x = trainCMPX, y = trainCMPY, method = 'knn',
+               preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = knnGrid)
+```
+
+
 
 # KJ Question 8.1
 
