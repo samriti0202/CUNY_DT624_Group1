@@ -170,9 +170,9 @@ for (i in seq_along(t10EN)) {
 par(mfrow = c(1, 1))
 ```
 
-`r t10N[1]`, `r t10N[7]`, and to a lesser extent `r t10N[5]` demonstrate a
-positive relation with yield. Conversely, `r t10N[2]` and `r t10N[3]` appear to
-be negatively correlated with yield. The remaining variables could almost be
+`r t10EN[1]`, `r t10EN[7]`, and to a lesser extent `r t10EN[5]` demonstrate a
+positive relation with yield. Conversely, `r t10EN[2]` and `r t10EN[3]` appear
+to be negatively correlated with yield. The remaining variables could almost be
 outlier examples from Anscombe's famous quartet.
 
 At this point, I would suggest that another model family should be investigated
