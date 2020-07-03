@@ -15,8 +15,11 @@ library(caret)
 library(doParallel)
 library(RANN)
 library(elasticnet)
+library(brnn)
+library(earth)
+library(kernlab)
 library(data.table)
-cl <- parallel::makePSOCKcluster((parallel::detectCores() * 0.75))
+cl <- parallel::makePSOCKcluster((parallel::detectCores() * 0.5))
 ```
 # KJ Question 6.3
 ## Question
@@ -144,52 +147,34 @@ for the training set. This is to be expected, as there is bound to be be some
 overfitting on the training set, despite the use of cross-validation.
 
 ### Part (e)
-Unfortunately, the elasticnet implementation in `caret` does not allow for easy
-extraction of the coefficients. What needs to be done is to run the `enet`
-fitting directly from its package with the values found by `caret` and then
-extract the coefficient. In order to obtain the same model, the same
-pre-processing needs to be done to the training and test data.
-
-```{r KJ63e}
-eFit <- enet(x = predict(preProcess(trainCMPX,
-                                    method= c('zv', 'nzv', 'knnImpute')),
-                         trainCMPX), y  = trainCMPY, lambda = 0)
-eFitpred <- predict(eFit, newx = predict(preProcess(trainCMPX,
-                                    method= c('zv', 'nzv', 'knnImpute')),
-                         testCMPX), s = elastiFit$bestTune[[1]],
-                         mode = 'fraction', type = 'fit')
-all.equal(eFitpred$fit, elastiPred)
-eFitCoef <- predict(eFit, s = elastiFit$bestTune[[1]], mode = 'fraction',
-                    type = 'coefficients')$coefficients
-TopN <- names(sort(eFitCoef[eFitCoef > 0], decreasing = TRUE))
-knitr::kable(sort(eFitCoef[eFitCoef > 0], decreasing = TRUE),
-             col.names = "Fit Coef", format = 'pandoc')
+The top 10 variabbles by importance are shown below:
+```{r KJ63ea, echo=FALSE}
+nI <- names(CMP)[-1]
+t10 <- data.frame(nI, A$importance)[order(A$importance,
+                                          decreasing = TRUE)[1:10], ]
+t10N <- t10$nI
+knitr::kable(t10, row.names = FALSE, format = 'pandoc', digits = 2)
 ```
 
 For this fit, the **Manufacturing** components completely dominate the list.
 
 ### Part (f)
 ```{r KJ63f, fig.height=8L, fig.width=8L}
-par(mfrow = c(3, 3))
-for (i in seq_along(TopN)) {
-  plot(x = unlist(CMP[, .SD, .SDcols = TopN[i]]), CMP$Yield,
-       xlab = TopN[i], ylab = "Yield")
+par(mfrow = c(4, 3))
+for (i in seq_along(t10N)) {
+  plot(x = unlist(CMP[, .SD, .SDcols = t10N[i]]), CMP$Yield,
+       xlab = t10N[i], ylab = "Yield")
 }
 par(mfrow = c(1, 1))
 ```
 
-It seems that only the first variable demonstrates any immediately recognizable
-relationship between it and yield, which accounts for its coefficient. The
-second-highest coefficient shows some relationship. The next three could be
-outlier examples in Anscombe's coefficient. Variables 6 through 9 almost look
-like random residuals.
+`r t10N[1]`, `r t10N[7]`, and to a lesser extent `r t10N[5]` and demonstrate a
+positive relation with yield. Conversely, `r t10N[2]` and `r t10N[3]` appear to
+be negatively correlated. The remaining variables could almost be outlier
+examples in Anscombe's famous quartet
 
 At this point, I would suggest that another model family should be investigated
 and test-set behavior should be compared.
-
-That being said, what we can learn from this model is that process 32 and
-probably process 09 are positively correlated with yield and attention should be
-paid to those processess to maximize yield.
 
 # KJ Question 7.2
 
@@ -247,6 +232,46 @@ set.seed(12)
 nnFit <- train(x = trainCMPX, y = trainCMPY, method = 'nnet',
                preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
                tuneGrid = nnGrid, trace = FALSE)
+```
+
+#### Bayesian Neural Network
+
+```{r KJ75aBNN, include=FALSE}
+set.seed(12)
+bnnFit <- train(x = trainCMPX, y = trainCMPY, method = 'brnn',
+               preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
+               tuneLength = 3)
+```
+
+#### Multivariate Adaptive Regression Splines
+
+```{r KJ75aMARS, include=FALSE}
+marsGrid <- expand.grid(degree = 1:2, nprune = 1:6)
+set.seed(12)
+marsFit <- train(x = trainCMPX, y = trainCMPY, method = 'earth',
+               preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = marsGrid)
+```
+
+#### Support Vector Machine   
+
+```{r KJ75aSVM, include=FALSE}
+svmRGrid <- expand.grid(C = seq(124.60, 124.85, 0.01),
+                        sigma = seq(4.39e-4, 4.41e-4, 1e-6))
+set.seed(12)
+svmFit <- train(x = trainCMPX, y = trainCMPY, method = 'svmRadialSigma',
+               preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = svmRGrid)
+```
+
+#### Relevance Vector Machine   
+
+```{r KJ75aSVM, include=FALSE}
+rvmRGrid <- expand.grid(sigma = seq(5e-6, 8e-6, 5e-8))
+set.seed(12)
+rvmFit <- train(x = trainCMPX, y = trainCMPY, method = 'rvmRadial',
+               preProcess = c('zv', 'nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = rvmRGrid)
 ```
 
 # KJ Question 8.1
