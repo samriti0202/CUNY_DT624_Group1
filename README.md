@@ -44,16 +44,15 @@ Submitted: :heavy_check_mark:
 |Problem|Student|Completed|
 |-------|-------|:-------:|
 |KJ 6.3 |Avraham Adler|:heavy_check_mark:|
-|KJ 7.2 | | |
-|KJ 7.5 | | |
-|KJ 8.1 | | |
-|KJ 8.2 | | |
-|KJ 8.3 | | |
-|KJ 8.7 | | |
-|Recommender|||
+|KJ 7.2 |Sam Bellows  | |
+|KJ 7.5 |Avraham Adler|:heavy_check_mark:|
+|KJ 8.1 |Austin Chan  | |
+|KJ 8.2 |Austin Chan  | |
+|KJ 8.3 |Vishal Arora | |
+|KJ 8.7 |Vishal Arora | |
+|Recommender|Sam Bellows||
+
 Submitted: :x:
  
-
-
 ### Project 2: Due 7/19/2020
 Submitted: :x:
