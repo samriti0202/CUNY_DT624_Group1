@@ -192,6 +192,81 @@ paid to those processess to maximize yield.
 
 # KJ Question 7.2
 
+7.2. Friedman (1991) introduced several benchmark data sets create by simulation. One of these simulations used the following nonlinear equation to create data: y = 10sin(πx1x2) + 20(x3 −0.5)2 + 10x4 +5x5 + N(0,σ2) where the x values are random variables uniformly distributed between [0, 1] (there are also 5 other non-informative variables also created in the simulation). The package mlbench contains a function called mlbench.friedman1 that simulates these data
+
+Tune several models on these data. 
+
+Which models appear to give the best performance? Does MARS select the informative predictors (those named X1–X5)?
+
+```{r KJ7.2}
+library(mlbench)
+
+set.seed(42)
+train <- mlbench.friedman1(200, sd = 1)
+train$x <- data.frame(train$x)
+
+test <- mlbench.friedman1(5000, sd = 1)
+test$x <- data.frame(test$x)
+
+featurePlot(train$x, train$y)
+```
+
+We see each of the features plotted against the target. The first 5 features (X1-X5) are predictive of the target, whereas the last 5 features have no correlation with the target. It appears that X1 and X4 have the highest correlation with the target, X2 and X5 have a looser correlation with the target, and X3 may have a quadratic relationship with the target.
+
+```{r KJ7.2elastic}
+cv_control <- trainControl(method = 'cv')
+
+elastic_net <- train(train$x, train$y, method = 'glmnet', tunelength = 10, trControl = cv_control)
+
+coef(elastic_net$finalModel, elastic_net$bestTune$.lambda)[,63]
+
+elasticPred <- predict(elastic_net, newx = test$x)
+
+postResample(pred = elasticPred, obs = test$y)
+```
+
+We can see from the model coefficients that even a simple elastic net is generally recognizing the more predictive features as being more important.
+
+```{r KJ7.2NN}
+nnet_grid <- expand.grid(.decay = c(0, 0.1, 1), .size = c(1:10), .bag = F)
+
+nnet_model <- train(train$x, train$y, method = 'avNNet', tuneGrid = nnet_grid, preProc = c('center', 'scale'), linout = T, trace = F)
+
+nnetPred <- predict(nnet_model, newx = test_features)
+
+postResample(pred = nnetPred, obs = test$y)
+```
+
+```{r KJ7.2MARS, warning = F}
+mars_grid <- expand.grid(.degree = c(1,2), .nprune = c(2:38))
+
+mars_model <- train(train$x, train$y, method = 'earth', tuneGrid = mars_grid, trControl = cv_control)
+
+marsPred <- predict(mars_model, newx = test_features)
+
+varImp(mars_model)
+
+postResample(pred = marsPred, obs = test$y)
+```
+
+```{r KJ7.2SVM}
+svm_model <- train(train$x, train$y, method = 'svmRadial', preProc = c('center', 'scale'), tuneLength = 14, trControl = cv_control)
+
+svmPred <- predict(svm_model, newx = test_features)
+
+postResample(pred = svmPred, obs = test$y)
+```
+
+```{r}
+knn_grid <- expand.grid(.k = c(1:20))
+
+knn_model <- train(train$x, train$y, method = 'knn', preProc = c('center', 'scale'), tuneGrid = knn_grid, trControl = cv_control)
+
+knnPred <- predict(knn_model, newx = test_features)
+
+postResample(pred = knnPred, obs = test$y)
+```
+
 # KJ Question 7.5
 
 # KJ Question 8.1
