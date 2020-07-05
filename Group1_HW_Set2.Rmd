@@ -1,11 +1,13 @@
 ---
 title: "CUNY DT 624"
-subtitle: "Homework Set 2"
-author: "Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan"
+author: 'Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan'
 date: "Summer 2020"
 output:
-  word_document:
-  toc: true
+  html_document:
+    df_print: paged
+  toc: yes
+  word_document: null
+subtitle: Homework Set 2
 toc_depth: 3
 ---
 
@@ -428,9 +430,166 @@ I presume that Kuhn & Johnson expected a different outcome, as the best
 performing non-linear model has the same levels of variable importance as does
 the best supporting linear model, due to the implementations.
 
-# KJ Question 8.1
+
+#KJ Question 8.1
+
+Recreate the simulated data from Exercise 7.2:
+
+```{r KJ81PREP1, message = FALSE, warning=FALSE}
+#data prep
+#written as stated in the textbook
+
+library(mlbench)
+set.seed(200)
+simulated <- mlbench.friedman1(200, sd = 1)
+simulated <- cbind(simulated$x, simulated$y)
+simulated <- as.data.frame(simulated)
+colnames(simulated)[ncol(simulated)] <- "y"
+```
+
+(a) Fit a random forest model to all the predictors, then estimate the variable importance scores:
+  
+```{r KJ81PREP2, message=FALSE, warning=FALSE}
+#data prep
+#written as stated in the exercise
+
+library(randomForest)
+library(caret)
+model1 <- randomForest(y ~ ., data = simulated, importance = T, ntree = 1000)
+rfImp1 <- varImp(model1, scale = F)
+```
+
+  
+Did the random forest model significantly use the uninformative predictors (V6 - V10)?
+
+(b) Now add an additional predictor that is highly correlated with one of the informative predictors. For example:
+
+```{r KJ81PREP3}
+#data prep
+#written as stated in the exercise
+
+simulated$duplicate1 <- simulated$V1 + rnorm(200) * .1
+cor(simulated$duplicate1, simulated$V1)
+```
+
+Fit another random forest model to these data. Did the importance score for V1 change? What happens when you add another predictor that is also highly correlated with V1?
+
+(c) Use the `cforest` function in the party package to fit a random forest model using conditional inference trees. The party package function `varimp` can calculate predictor importance. the `conditional` argument of that function toggles between traditional importance measure and the modified version described in Strobl et al. (2007). Do these importances show the same pattern as the traditional random forest model?
+
+(d) Repeat this process with different tree models, such as boosted trees and Cubist. Does the same pattern occur?
+
+
+## Answers
+
+### Part (a)
+
+```{r KJ81a1}
+rfImp1
+```
+
+According to the variable importance plot, V6 - V10 are all close to zero, which indicates that they were not very important towards fitting the model.
+
+### Part (b)
+
+```{r KJ81b1}
+set.seed(100)
+model81b1 <- randomForest(y ~ ., data = simulated, importance = T, ntree = 1000)
+rfImp81b1 <- varImp(model81b1, scale = F)
+
+rfImp81b1
+```
+
+Looking at the variable importance plot, we can see that the importance score from V1 dropped from 8.7 to 6.3.
+
+```{r KJ81b2}
+set.seed(100)
+simulated$duplicate2 <- simulated$V1 + rnorm(200) * .1
+
+model81b2 <- randomForest(y ~ ., data = simulated, importance = T, ntree = 1000)
+rfImp81b2 <- varImp(model81b2, scale = F)
+
+rfImp81b2
+```
+
+Adding another predictor that is highly correlated with V1 lowers the variable importance of V1 even further down from 6.3 to 5.9. It appears that multicollinear variables can muddle the variable importance calculations for random forest. Unless adding multicollinear variables would significantly improve model predictions, the best option for model selection using random forest is to remove multicollinear variables so that the variable importance plot is more accurate.
+
+### Part (c)
+
+```{r KJ81c1, message=FALSE, warning=FALSE}
+library(party)
+
+set.seed(100)
+model81c1 <- cforest(y ~ ., data = simulated)
+rfImp81c1_cond <- varimp(model81c1, conditional = T)
+rfImp81c1_noncond <- varimp(model81c1, conditional = F)
+
+rfImp81c1_cond
+rfImp81c1_noncond
+```
+
+When the conditional argument is true, the duplicate and V1 variable importances decrease significantly. This pushes duplicate1 and duplicate2 close to the bottom in terms of importance. When the conditional argument is false, V1, duplicate1, and duplicate2 have much higher variable importances. The important thing to note from this comparison is that when conditional is true, duplicate1 and duplicate2 have lower variable importances compared to V5. This is not true when conditional is false, where the importance of V5 is drowned out by the noise of duplicate1 and duplicate2. Therefore, we can conclude that the importances shown when conditional is true does not exhibit the same pattern as the traditional random forest model.
+
+### Part (d)
+
+```{r KJ81d1, message=FALSE, warning=FALSE}
+library(gbm)
+
+set.seed(100)
+
+gbm_81d_1 = gbm(y ~ V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 + V9 + V10, data = simulated, distribution = "gaussian")
+gbm_81d_dup1 = gbm(y ~ V1 + V2 + V3 + V4 + V5 + V6 + V7 + V8 + V9 + V10 + duplicate1, data = simulated, distribution = "gaussian")
+gbm_81d_all = gbm(y ~ ., data = simulated, distribution = "gaussian")
+
+summary(gbm_81d_1)
+summary(gbm_81d_dup1)
+summary(gbm_81d_all)
+```
+
+Repeating this process with the boosted tree model, we see some interesting outputs for the variable importance graphs. As multicollinear variables are included, the ranking of variable importance remains exactly the same with minimal changes in the variable importance values. Duplicate1 and Duplicate2 are relegated to the middle of the graph, where they are less important compared to V4, V1, V2, V5, and V3. It appears that boosted trees deal with multicollinearity better than random forest. While multicollinearity is still not ideal for this model, the model is robust enough to handle it.
+
+```{r KJ81d2, message=FALSE, warning=FALSE}
+library(Cubist)
+
+set.seed(100)
+
+cubist_81d_1 = cubist(simulated[,!names(simulated) %in% c("y","duplicate1","duplicate2")], simulated$y)
+cubist_81d_dup1 = cubist(simulated[,!names(simulated) %in% c("y","duplicate2")], simulated$y)
+cubist_81d_all = cubist(simulated[,!names(simulated) %in% c("y")], simulated$y)
+
+varImp(cubist_81d_1)
+varImp(cubist_81d_dup1)
+varImp(cubist_81d_all)
+```
+
+The cubist model is even more interesting. According to the variable importance plots, multicollinearity is a total nonfactor for this model. No matter how many multicollinear variables are included, the model includes the same four variables V1, V2, V4, and V5. Also, their variable importances are all the same value of 50. This model appears to be very robust, which is good from a modelling perspective. This model was able to sift through the noise generated through multicollinearity and pick out the four most important variables consistently. Overall, very impressive.
 
 # KJ Question 8.2
+
+Use a simulation to show tree bias with different granularities.
+
+## Answer
+
+The main problem with single regression trees is that they are highly susceptible to selection bias. Often times, a regression tree will choose low-variance predictors with more distinct values compared to high variance predictors that are actually correlated with the dependent variable. When many variables are included in the model, there is a high risk that some of the high granularity uncorrelated variables will have more splits and will be chosen to split the top nodes of the tree. When these trees are pruned, the trees will only contain those highly granular noise variables instead of the correct variables.
+
+This problem can be demonstrated through simulation as seen below:
+
+```{r KJ82_1}
+set.seed(100)
+
+good_variable1 = sample(1:5, 500, replace = T)
+good_variable2 = sample(1:2, 500, replace = T)
+bad_variable = rnorm(500, mean = 0, sd = 3)
+dependent_variable = good_variable1 + good_variable2 + rnorm(500, mean = 0, sd = 7)
+
+simulated_data = data.frame(good_variable1 = good_variable1, good_variable2 = good_variable2, dependent_variable = dependent_variable, bad_variable = bad_variable)
+
+tree_sim = rpart::rpart(dependent_variable ~ ., data = simulated_data)
+
+varImp(tree_sim)
+```
+
+`dependent_variable` was constructed using `good_variable1`, `good_variable2`, and some high-variance noise. `bad_variable` is a low-variance random normal that is unrelated to `dependent_variable`. `good_variable1` has 5 unique values and `good_variable2` has two unique values, while `bad_variable` has 500 unique values. After fitting a single regression tree to the simulated data using `rpart()` and checking the variable importance, we can see that `bad_variable` has higher variable importance compared to `good_variable1` and `good_variable2` even though `bad_variable` was not used to create `dependent_variable`.
+
 
 # KJ Question 8.3
 
