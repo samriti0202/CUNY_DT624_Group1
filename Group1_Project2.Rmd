@@ -1,0 +1,33 @@
+---
+title: "CUNY DT 624"
+author: 'Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan'
+date: "Summer 2020"
+output:
+  word_document:
+    toc: yes
+    toc_depth: 4
+subtitle: Project 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(readxl)
+library(dplyr)
+library(caret)
+```
+
+# Data Intake
+
+```{r Intake}
+name_sheet <- read_xlsx('./project2data/Copy of Data Columns, Types.xlsx')
+colnames <- as.vector(name_sheet[-nrow(name_sheet), 1])$Name
+coltypes <- c('text', rep('numeric', nrow(name_sheet) - 2))
+
+train <- read_xlsx('./project2data/StudentData - TO MODEL.xlsx', col_names = colnames, skip = 1, col_types = coltypes)
+test <- read_xlsx('./project2data/StudentEvaluation- TO PREDICT.xlsx', col_names = colnames, skip = 1)
+
+train_features <- train %>% select(-PH)
+train_target <- train %>% select(PH)
+
+test_features <- test %>% select(-PH)
+```
