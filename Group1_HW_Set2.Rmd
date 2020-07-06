@@ -204,53 +204,65 @@ We see each of the features plotted against the target. The first 5 features (X1
 ```{r KJ7.2elastic}
 cv_control <- trainControl(method = 'cv')
 
-elastic_net <- train(train$x, train$y, method = 'glmnet', tunelength = 10, trControl = cv_control)
+elasticnet_model <- train(train$x, train$y, method = 'glmnet', tunelength = 10, trControl = cv_control)
 
-coef(elastic_net$finalModel, elastic_net$bestTune$.lambda)[,63]
+coef(elasticnet_model$finalModel, elasticnet_model$bestTune$.lambda)[,63]
 
-elasticPred <- predict(elastic_net, newx = test$x)
+elasticPred <- predict(elasticnet_model, newdata = test$x)
 
 postResample(pred = elasticPred, obs = test$y)
 ```
 
 We can see from the model coefficients that even a simple elastic net is generally recognizing the more predictive features as being more important.
 
+The simple elastic net model has an RMSE of 2.69 and an R squared of .72.
+
 ```{r KJ7.2NN}
 nnet_grid <- expand.grid(.decay = c(0, 0.1, 1), .size = c(1:10), .bag = F)
 
 nnet_model <- train(train$x, train$y, method = 'avNNet', tuneGrid = nnet_grid, preProc = c('center', 'scale'), linout = T, trace = F)
 
-nnetPred <- predict(nnet_model, newx = test_features)
+nnet_model$bestTune
+
+nnetPred <- predict(nnet_model, newdata = test$x)
 
 postResample(pred = nnetPred, obs = test$y)
 ```
+
+The features are all uncorrelated enough to warrant using all features in the neural net model. We preprocess the data by standardizing it in order to have all features on the same scale. The simple neural network model performs best with 4 neurons and has an RMSE of 2.17 and an R squared of .81.
 
 ```{r KJ7.2MARS, warning = F}
 mars_grid <- expand.grid(.degree = c(1,2), .nprune = c(2:38))
 
 mars_model <- train(train$x, train$y, method = 'earth', tuneGrid = mars_grid, trControl = cv_control)
 
-marsPred <- predict(mars_model, newx = test_features)
+marsPred <- predict(mars_model, newdata = test$x)
 
 varImp(mars_model)
 
 postResample(pred = marsPred, obs = test$y)
 ```
 
+The Multivariate Adaptive Regression Splines model (or MARS) does an excellent job identifying predictive features, assigning an importance of 0 to 4/5 noise features and placing the last noise feature far below the 5 predictive features. The MARS model performs excellently with an RMSE of 1.32 and an R squared of .93.
+
 ```{r KJ7.2SVM}
 svm_model <- train(train$x, train$y, method = 'svmRadial', preProc = c('center', 'scale'), tuneLength = 14, trControl = cv_control)
 
-svmPred <- predict(svm_model, newx = test_features)
+svmPred <- predict(svm_model, newdata = test$x)
+
+svm_model$finalModel
 
 postResample(pred = svmPred, obs = test$y)
 ```
+
+The SVM model performs on par with the neural network with an RMSE of 2.03 and an R squared of .84. The model is using 163/200 of the data points as support vectors, or 81.5% of the data.
 
 ```{r}
 knn_grid <- expand.grid(.k = c(1:20))
 
 knn_model <- train(train$x, train$y, method = 'knn', preProc = c('center', 'scale'), tuneGrid = knn_grid, trControl = cv_control)
 
-knnPred <- predict(knn_model, newx = test_features)
+knnPred <- predict(knn_model, newdata = test$x)
 
 postResample(pred = knnPred, obs = test$y)
 ```
@@ -435,6 +447,13 @@ the best supporting linear model, due to the implementations.
 # KJ Question 8.3
 
 # KJ Question 8.7
+
+# Market Basket Analysis
+
+```{r RecIntake}
+rec_data <- read.csv('GroceryDataSet.csv', header = F)
+
+```
 
 ```{r stopCluster, include=FALSE}
 parallel::stopCluster(cl)
