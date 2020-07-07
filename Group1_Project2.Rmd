@@ -10,7 +10,7 @@ subtitle: Project 2
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE)
 library(openxlsx)
 library(caret)
 library(data.table)
@@ -26,16 +26,16 @@ with a deeper dive into the process. Computer code will be made available upon
 request.
 
 ```{r dataIntake, include=FALSE}
-trainD <- read.xlsx('./project2data/StudentData - TO MODEL.xlsx',
-                    colNames = TRUE, sep.names = ' ')
-testD <- read.xlsx('./project2data/StudentEvaluation- TO PREDICT.xlsx',
-                    colNames = TRUE, sep.names = ' ')
-setDT(trainD)
-setDT(testD)
-trainY <- trainD$PH
-trainDummy <- dummyVars(PH ~ ., data = trainD, fullRank = TRUE)
-trainX <- as.data.table(predict(trainDummy, newdata = trainD))
-testX <- as.data.table(predict(trainDummy, newdata = testD))
+trainData <- read.xlsx('./project2data/StudentData - TO MODEL.xlsx',
+                       colNames = TRUE, sep.names = ' ')
+predictData <- read.xlsx('./project2data/StudentEvaluation- TO PREDICT.xlsx',
+                         colNames = TRUE, sep.names = ' ')
+setDT(trainData)
+setDT(predictData)
+trainY <- trainData$PH
+trainDummy <- dummyVars(PH ~ ., data = trainData, fullRank = TRUE)
+trainX <- as.data.table(predict(trainDummy, newdata = trainData))
+predX <- as.data.table(predict(trainDummy, newdata = predictData))
 numObs <- length(trainY)
 numVar <- dim(trainX)[[2]]
 ```
@@ -103,7 +103,7 @@ brief synopsis for the benefit of those unfamiliar.
 ## Missing Data
 ### Missing Targets
 ```{r missingD, include=FALSE}
-missDat <- trainD[, lapply(.SD, function(x) sum(is.na(x)))]
+missDat <- trainData[, lapply(.SD, function(x) sum(is.na(x)))]
 missTgt <- missDat$PH
 missTgtLoc <- which(is.na(trainY))
 trainX <- trainX[-missTgtLoc, ]
@@ -152,11 +152,72 @@ near-zero variance removals, the next step was to fit various models.
 
 ## Model Selection Criteria
 In order to select the best model, a measure of its accuracy is needed. There
-are two main methods. The first is to manually split the training data into a
-"training" and "validation" set, fit the model to the "training" subset, and
-compare the results of different models' scores on the "validation" subset. The
+are two main methods (Hastie et al 2001, ch. 7). The first is to manually split
+the training data into a "training" and "validation" set, fit the model to the
+"training" subset, and compare the results of different models' scores on the
+"validation" subset.
 
+The second is to only hold out a small subset of the training set, use that to
+test, but do it multiple times over a number of holdouts. These holdouts are
+called **folds** and this process is called **cross-validation** (cv). So a
+five-fold cv would train on 80\% of the data and test against the remaining 20\%
+five different times on five disjoint holdouts. 
 
+For the purposes of this report, 25\% of the data will be randomly extracted to
+act as the final test set, and three-times repeated five-fold cross validation
+will be used to select the best parameters for a model on the remaining 75\%.
+This means three separate runs of five-fold cv, each time with different 20\%
+partitions.
+
+The metric used for comparison will be **RMSE** which is the square root of the
+average of the squared residuals. The lower the value on the test set the
+better.
+
+## Modeling
+```{r modelSetup}
+set.seed(1864)
+tSplits <- createDataPartition(trainY, p = 0.75)
+trnX <- trainX[tSplits$Resample1, ]
+tstX <- trainX[-tSplits$Resample1, ]
+trnY <- trainY[tSplits$Resample1]
+tstY <- trainY[-tSplits$Resample1]
+mdCmp <- data.frame(Model = character(0), TrnErr = double(0),
+                    TstErr = double(0))
+fitControl <- trainControl(method = "repeatedcv", number = 5L, repeats = 3L,
+                           allowParallel = TRUE)
+```
+```{r elastiNet, cache=2L}
+cl <- parallel::makePSOCKcluster((parallel::detectCores() * 0.5))
+doParallel::registerDoParallel(cl)
+set.seed(9614)
+elFit <- train(x = trnX, y = trnY, method = 'enet',
+               preProcess = c('nzv', 'knnImpute'),
+               trControl = fitControl, tuneLength = 10L)
+mdCmp <- rbind(mdCmp, data.frame(Model = "ElasticNet",
+                                 TrnErr = getTrainPerf(elFit)$TrainRMSE,
+                                 TstErr = RMSE(predict(elFit, tstX), tstY)))
+parallel::stopCluster(cl)
+```
+```{r randomF, cache=2L}
+cl <- parallel::makePSOCKcluster((parallel::detectCores() * 0.5))
+doParallel::registerDoParallel(cl)
+rfGrid <- expand.grid(mtry = 31:34,
+                      splitrule = 'extratrees',
+                      min.node.size = 5L)
+set.seed(9614)
+rfFit <- train(x = trnX, y = trnY, method = 'ranger',
+               preProcess = c('nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = rfGrid, importance = 'impurity')
+mdCmp <- rbind(mdCmp, data.frame(Model = "Random Forest",
+                                 TrnErr = getTrainPerf(rfFit)$TrainRMSE,
+                                 TstErr = RMSE(predict(rfFit, tstX), tstY)))
+parallel::stopCluster(cl)
+```
+
+## Results
+```{r mResults}
+knitr::kable(mdCmp[order(mdCmp$TstErr), ], format = 'pandoc', digits = 3L)
+```
 
 # Technical Appendix
 ## Table of Missing Data
