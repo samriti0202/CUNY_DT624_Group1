@@ -32,9 +32,10 @@ testD <- read.xlsx('./project2data/StudentEvaluation- TO PREDICT.xlsx',
                     colNames = TRUE, sep.names = ' ')
 setDT(trainD)
 setDT(testD)
-trainX <- trainD[, !"PH"]
-trainY <- trainD[, PH]
-testX <- testD[, !"PH"]
+trainY <- trainD$PH
+trainDummy <- dummyVars(PH ~ ., data = trainD, fullRank = TRUE)
+trainX <- as.data.table(predict(trainDummy, newdata = trainD))
+testX <- as.data.table(predict(trainDummy, newdata = testD))
 numObs <- length(trainY)
 numVar <- dim(trainX)[[2]]
 ```
@@ -57,6 +58,16 @@ will be used in prediction. In statistical terms these are also known as the
 The term **target** is used to describe the element for which the model is being
 built---in this case, the `PH`. In statistical terms this is also known as the
 *dependent variables*.
+
+All the features but one are numerical. `Brand Code`, however, can take one of
+four character values when it is not missing. As it is somewhat hard to do math
+on the alphabet, the standard way of dealing with categories is to use
+**dummy variables** or *one-hot encoding*. The unique instances of the feature
+are replaced by yes/no questions. In this case, the data may be `A`, `B`, `C`,
+or `D`. The default is assumed to be `A`, and the `Brand Code` field is replaced
+by three new variables which are basically `IsB`, `IsC`, and `IsD`. If the
+original value was `A`, all three are 0. Otherwise, the column representing the
+value gets a 1.
 
 ## Model Families
 There are various families of models which can be built. While it is out of
@@ -96,6 +107,7 @@ missTgt <- missDat$PH
 missTgtLoc <- which(is.na(trainY))
 trainX <- trainX[-missTgtLoc, ]
 trainY <- trainY[-missTgtLoc]
+nZV <- nzv(trainX)
 ```
 Unfortunately, there were some issues with measurements. The most important of
 these are the `r missTgt` missing target variables. Since for those entries
@@ -110,8 +122,28 @@ value of the missing data. This means finding a substitute for the missing value
 For numeric features, the simplest imputation substitutes the missing values
 with their mean or median. On the one hand, this engenders the least distortion
 due to the missing data. However, this comes at the cost of the least predictive
-value as well. 
+value as well.
 
+A more sophisticated technique would be to impute the missing
+value based on similar observations. One method, called *k-nearest-neighbors*
+(knn) does so by finding those similar observations, taking the mean value of
+that feature, and using that as the imputation. That has the benefit of the
+imputed value being more predictive than the global mean or median. There are
+other even more sophisticated imputation methods, but knn should work here.
+
+Another benefit of using knn imputation is that it automatically applies
+*centering* and *scaling* which gives every variable a mean of 0 and a standard
+deviation of 1. This allows for modeling to be performed on a data set which is
+on a consistent unit basis. Of course, for predictions, the data will be
+returned to its native scale.
+
+## Near-Zero Variance
+Sometimes a predictor is constant, are almost constant. In these cases, it
+doesn't have much predictive power as it is the same or almost the same for
+almost all cases. It is prudent to not even include those in the modeling
+process as they will tend to consume resources for little gain. For the
+beverage data, there was only `r length(nZV)` such variable:
+`r names(trainX)[nZV]`.
 
 # Technical Appendix
 ## Table of Missing Data
@@ -120,6 +152,13 @@ The magnitude of the missing features and target are shown in the table below:
 knitr::kable(t(missDat), format = 'pandoc')
 ```
 
+## Near-Zero Variance
+For this analysis, a variable is considered to have near-zero variance if the
+ratio between the most common and second most common instance is 19:1 or greater
+**and** the number of unique values is no more than 10\% of the total dataset.
+```{r echo=FALSE}
+knitr::kable(nzv(trainX, saveMetrics = TRUE), format = 'pandoc', digits = 3L)
+```
 
 
 
