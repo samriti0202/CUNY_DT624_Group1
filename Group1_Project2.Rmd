@@ -42,13 +42,29 @@ numVar <- dim(trainX)[[2]]
 The company has provided data on `r numObs` formulations of `r numVar`
 components and their resulting PH values. From this data, the research team was
 asked to build a model allowing PH prediction based on the formulation *prior*
-to actually implementing the recipe. In the ensuing report, we will refer to
-the formulations *with* their applicable PH values as the **training** set, for
-it is on this data we intend to *train* the model.
+to actually implementing the recipe.
+
+## Vocabulary
+In the ensuing report, we will refer to the formulations *with* their applicable
+PH values as the **training** set, for it is on this data we intend to *train*
+the model.
+
+The term **features** is used to describe the elements of the formulation which
+will be used in prediction. In statistical terms these are also known as the
+*independent variables*.
+
+The term **target** is used to describe the element for which the model is being
+built---in this case, the `PH`. In statistical terms this is also known as the
+*dependent variables*.
 
 ## Data Weaknesses
-Unfortunately, there were some issues with measurements. The 
+Unfortunately, there were some issues with measurements. There are 
 
+
+
+
+# Technical Appendix
+## Missing Data
 
 
 
