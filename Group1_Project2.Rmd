@@ -99,6 +99,7 @@ brief synopsis for the benefit of those unfamiliar.
    also methods which create many trees and use those results to arrive at a
    final answer.
 
+# Data Preparation
 ## Missing Data
 ### Missing Targets
 ```{r missingD, include=FALSE}
@@ -145,6 +146,18 @@ process as they will tend to consume resources for little gain. For the
 beverage data, there was only `r length(nZV)` such variable:
 `r names(trainX)[nZV]`.
 
+# Analysis
+Now that the data has been prepared with dummy variables, knn imputation, and
+near-zero variance removals, the next step was to fit various models. 
+
+## Model Selection Criteria
+In order to select the best model, a measure of its accuracy is needed. There
+are two main methods. The first is to manually split the training data into a
+"training" and "validation" set, fit the model to the "training" subset, and
+compare the results of different models' scores on the "validation" subset. The
+
+
+
 # Technical Appendix
 ## Table of Missing Data
 The magnitude of the missing features and target are shown in the table below:
@@ -162,4 +175,7 @@ knitr::kable(nzv(trainX, saveMetrics = TRUE), format = 'pandoc', digits = 3L)
 
 
 
-
+# References
+  * Hastie, T.; Tibshirani, R. & Friedman, J. (2001),
+  *The Elements of Statistical Learning*, Springer New York Inc.,
+  New York, NY, USA.
