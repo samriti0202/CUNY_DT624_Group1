@@ -34,6 +34,7 @@ setDT(trainD)
 setDT(testD)
 trainX <- trainD[, !"PH"]
 trainY <- trainD[, PH]
+testX <- testD[, !"PH"]
 numObs <- length(trainY)
 numVar <- dim(trainX)[[2]]
 ```
@@ -57,7 +58,38 @@ The term **target** is used to describe the element for which the model is being
 built---in this case, the `PH`. In statistical terms this is also known as the
 *dependent variables*.
 
-## Data Weaknesses
+## Model Families
+There are various families of models which can be built. While it is out of
+scope of this report to give a detailed analysis of each, following will be a
+brief synopsis for the benefit of those unfamiliar.
+
+ * **Regression**
+   * These are models which rely on some linear relationship between the target
+   and either the features themselves or some transform of them. They also may
+   include some form of *regularization*, which means a penalty to reflect that
+   adding more features adds more **parameter risk** at the expense of
+   **process risk**.
+ * **Neural Networks**
+   * These are mathematical models which allow for a "mixing" of different
+   linear functions to arrive at a non-linear relationship. The are often
+   considered the epitome of the "black-box" model.
+ * **Support Vector Machines (SVM)**
+   * Although it may appear that the relationship between a target and its
+   features are non-linear in the two or three dimensions that we can easily
+   envision, it may be that in high-enough dimensions there is a "separating
+   plane" which can successfully partition the data into distinct groups. The
+   mathematics behind SVMs searches for those high-dimensional "fences" and uses
+   those to build a model.
+ * **Regression Trees**
+   * Instead of a single mathematical formula, tree-based models ask a yes-no
+   question at various levels, and partition the data points based on those
+   yes-no questions. The number of levels of questions and the number of points
+   allowed in each final bucket, affect the complexity of the tree. There are
+   also methods which create many trees and use those results to arrive at a
+   final answer.
+
+## Missing Data
+### Missing Targets
 ```{r missingD, include=FALSE}
 missDat <- trainD[, lapply(.SD, function(x) sum(is.na(x)))]
 missTgt <- missDat$PH
@@ -65,15 +97,28 @@ missTgtLoc <- which(is.na(trainY))
 trainX <- trainX[-missTgtLoc, ]
 trainY <- trainY[-missTgtLoc]
 ```
-Unfortunately, there were some issues with measurements. Not only are there
-missing features, there are also `r missTgt` missing target variables. Since for
-those entries there is nothing to which to calibrate, those entries will be
-removed from the training data.
+Unfortunately, there were some issues with measurements. The most important of
+these are the `r missTgt` missing target variables. Since for those entries
+there is nothing to which to calibrate, those entries will be removed from the
+training data.
 
+### Missing Features
+There remains the issue of the many missing features, a table of which can be
+found in the technical appendix. Generally, so long as the proportion of the
+missing data is not a sizable percentage of the training set, one *imputes* the
+value of the missing data. This means finding a substitute for the missing value.
+For numeric features, the simplest imputation substitutes the missing values
+with their mean or median. On the one hand, this engenders the least distortion
+due to the missing data. However, this comes at the cost of the least predictive
+value as well. 
 
 
 # Technical Appendix
-## Missing Data
+## Table of Missing Data
+The magnitude of the missing features and target are shown in the table below:
+```{r missTable}
+knitr::kable(t(missDat), format = 'pandoc')
+```
 
 
 
