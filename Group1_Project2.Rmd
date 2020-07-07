@@ -10,28 +10,47 @@ subtitle: Project 2
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(echo=FALSE)
 library(openxlsx)
 library(caret)
 library(data.table)
 ```
 
+# Agenda
+This report will discuss our team's building a model to predict the PH of a
+formulation given the presence and ratio of key ingredients. We understand that
+there will be a varied audience for this report. Therefore, the first section of
+the report will contain a high-level overview of the modeling process and
+decisions together with the findings. There will be a more technical appendix
+with a deeper dive into the process. Computer code will be made available upon
+request.
 
-
-
-
-# Data Intake
-
-```{r Intake}
-name_sheet <- read_xlsx('./project2data/Copy of Data Columns, Types.xlsx')
-colnames <- as.vector(name_sheet[-nrow(name_sheet), 1])$Name
-coltypes <- c('text', rep('numeric', nrow(name_sheet) - 2))
-
-train <- read_xlsx('./project2data/StudentData - TO MODEL.xlsx', col_names = colnames, skip = 1, col_types = coltypes)
-test <- read_xlsx('./project2data/StudentEvaluation- TO PREDICT.xlsx', col_names = colnames, skip = 1)
-
-train_features <- train %>% select(-PH)
-train_target <- train %>% select(PH)
-
-test_features <- test %>% select(-PH)
+```{r dataIntake, include=FALSE}
+trainD <- read.xlsx('./project2data/StudentData - TO MODEL.xlsx',
+                    colNames = TRUE, sep.names = ' ')
+testD <- read.xlsx('./project2data/StudentEvaluation- TO PREDICT.xlsx',
+                    colNames = TRUE, sep.names = ' ')
+setDT(trainD)
+setDT(testD)
+trainX <- trainD[, !"PH"]
+trainY <- trainD[, PH]
+numObs <- length(trainY)
+numVar <- dim(trainX)[[2]]
 ```
+
+# Research Problem
+The company has provided data on `r numObs` formulations of `r numVar`
+components and their resulting PH values. From this data, the research team was
+asked to build a model allowing PH prediction based on the formulation *prior*
+to actually implementing the recipe. In the ensuing report, we will refer to
+the formulations *with* their applicable PH values as the **training** set, for
+it is on this data we intend to *train* the model.
+
+## Data Weaknesses
+Unfortunately, there were some issues with measurements. The 
+
+
+
+
+
+
