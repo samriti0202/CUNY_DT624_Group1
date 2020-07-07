@@ -12,8 +12,8 @@ subtitle: Project 2
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F)
 library(openxlsx)
-library(dplyr)
 library(caret)
+library(data.table)
 ```
 
 
