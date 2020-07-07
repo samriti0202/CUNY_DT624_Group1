@@ -125,12 +125,12 @@ with their mean or median. On the one hand, this engenders the least distortion
 due to the missing data. However, this comes at the cost of the least predictive
 value as well.
 
-A more sophisticated technique would be to impute the missing
-value based on similar observations. One method, called *k-nearest-neighbors*
-(knn) does so by finding those similar observations, taking the mean value of
-that feature, and using that as the imputation. That has the benefit of the
-imputed value being more predictive than the global mean or median. There are
-other even more sophisticated imputation methods, but knn should work here.
+A more sophisticated technique would be to impute the missing value based on
+similar observations. One method, called *k-nearest-neighbors* (knn) does so by
+finding those similar observations, taking the mean value of that feature, and
+using that as the imputation. That has the benefit of the imputed value being
+more predictive than the global mean or median. There are other even more
+sophisticated imputation methods, but knn should work here.
 
 Another benefit of using knn imputation is that it automatically applies
 *centering* and *scaling* which gives every variable a mean of 0 and a standard
