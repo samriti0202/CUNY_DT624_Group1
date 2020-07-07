@@ -21,7 +21,7 @@ This report will discuss our team's building a model to predict the PH of a
 formulation given the presence and ratio of key ingredients. We understand that
 there will be a varied audience for this report. Therefore, the first section of
 the report will contain a high-level overview of the modeling process and
-decisions together with the findings. There will be a more technical appendix
+decisions resulting in the findings. There will be a more technical appendix
 with a deeper dive into the process. Computer code will be made available upon
 request.
 
@@ -58,8 +58,17 @@ built---in this case, the `PH`. In statistical terms this is also known as the
 *dependent variables*.
 
 ## Data Weaknesses
-Unfortunately, there were some issues with measurements. There are 
-
+```{r missingD, include=FALSE}
+missDat <- trainD[, lapply(.SD, function(x) sum(is.na(x)))]
+missTgt <- missDat$PH
+missTgtLoc <- which(is.na(trainY))
+trainX <- trainX[-missTgtLoc, ]
+trainY <- trainY[-missTgtLoc]
+```
+Unfortunately, there were some issues with measurements. Not only are there
+missing features, there are also `r missTgt` missing target variables. Since for
+those entries there is nothing to which to calibrate, those entries will be
+removed from the training data.
 
 
 
