@@ -254,9 +254,27 @@ mdCmp <- rbind(mdCmp, data.frame(Model = "K-Nearest Neighbors",
                                  TstErr = RMSE(predict(knnFit, tstX), tstY)))
 parallel::stopCluster(cl)
 ```
+```{r xgbTF, cache=2L}
+cl <- parallel::makePSOCKcluster(ncl)
+doParallel::registerDoParallel(cl)
+xgbTGrid <- expand.grid(max_depth = 8:9, nrounds = 430,
+                        eta = 0.082,
+                        colsample_bytree = 0.826,
+                        min_child_weight = 1,
+                        subsample = 1,
+                        gamma = 0)
+set.seed(9614)
+xgbTFit <- train(x = trnX, y = trnY, method = 'xgbTree',
+               preProcess = c('nzv', 'knnImpute'), trControl = fitControl,
+               tuneGrid = xgbTGrid)
+mdCmp <- rbind(mdCmp, data.frame(Model = "XGBoost: Tree",
+                                 TrnErr = getTrainPerf(xgbTFit)$TrainRMSE,
+                                 TstErr = RMSE(predict(xgbTFit, tstX), tstY)))
+parallel::stopCluster(cl)
+```
 ## Results
 ```{r mResults}
-knitr::kable(mdCmp[order(mdCmp$TstErr), ], format = 'pandoc', digits = 3L)
+knitr::kable(mdCmp[order(mdCmp$TstErr), ], format = 'pandoc', digits = 4L)
 ```
 
 # Technical Appendix
