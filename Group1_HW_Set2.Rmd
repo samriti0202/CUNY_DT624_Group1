@@ -1,20 +1,25 @@
 ---
 title: "CUNY DT 624"
-subtitle: Homework Set 2
 author: 'Group 1: Avraham Adler, Vishal Arora, Samuel Bellows, Austin Chan'
 date: "Summer 2020"
 output:
   word_document:
-    toc: true
+    toc: yes
     toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
   html_document:
     df_print: paged
     toc: yes
     toc_depth: 3
+subtitle: Homework Set 2
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE)
+library(tibble)
+library(ggplot2)
 library(caret)
 library(doParallel)
 library(RANN)
@@ -23,6 +28,8 @@ library(brnn)
 library(earth)
 library(kernlab)
 library(data.table)
+library(gbm)
+library(VIM)
 cl <- parallel::makePSOCKcluster((parallel::detectCores() * 0.5))
 registerDoParallel(cl)
 ```
@@ -97,9 +104,9 @@ knitr::kable(unlist(CMP[, lapply(.SD, function (x) {sum(is.na(x))})])[
   col.names = "NumMissing", format = 'pandoc')
 ```
 
-The values will be imputed using K-nearest neighbors which also automatically
+The values will be imputed using KU+2212nearest neighbors which also automatically
 implies a centering and scaling of the data. If imputation is desired without
-centering and scaling, one may use a bagged-tree imputation method instead.
+centering and scaling, one may use a baggedU+2212tree imputation method instead.
 
 ### Part (c)
 The data will be divided equally, and randomly, into a training and test set.
@@ -116,7 +123,7 @@ testCMPY <- unlist(CMP[-trainObs, 1])
 
 The model selected from the chapter will be an elastic net, combining the (best)
 features of ridge regression and the feature selection of lasso. The tuning will
-be based on a five-time repeated 11-fold cross validation, as both the training
+be based on a fiveU+2212time repeated 11-fold cross validation, as both the training
 and testing data have 88 observations. The tuning will use
 RMSE as the performance metric to optimize.
 
@@ -606,7 +613,7 @@ the traditional random forest model.
 ### Part (d)
 
 ```{r KJ81d1, message=FALSE, warning=FALSE}
-library(gbm)
+
 
 set.seed(100)
 
@@ -701,8 +708,169 @@ has higher variable importance compared to `good_variable1` and `good_variable2`
 even though `bad_variable` was not used to create `dependent_variable`.
 
 # KJ Question 8.3
+In stochastic gradient boosting the bagging fraction and learning rate
+will govern the construction of the trees as they are guided by the gradient.
+Although the optimal values of these parameters should be obtained
+through the tuning process, it is helpful to understand how the magnitudes
+of these parameters affect magnitudes of variable importance. Figure 8.24
+provides the variable importance plots for boosting using two extreme values
+for the bagging fraction (0.1 and 0.9) and the learning rate (0.1 and 0.9) for
+the solubility data. The left-hand plot has both parameters set to 0.1, and
+the right-hand plot has both set to 0.9:                              
 
+![Fig 8.24](Fig8-24.png)                            
+
+
+** Part (a)** Why does the model on the right focus its importance on just the first few     
+    of predictors, whereas the model on the left spreads importance across
+    more predictors?                                
+
+*Answer* :- The right hand figure employs greedy strategy than the left hand
+figure thus employing less number of predictors for finding the optimal solution
+but the drawback of this approach is over-fitting.
+
+
+**Part (b)** Which model do you think would be more predictive of other samples?                                  
+
+*Answer* :- Left hand model will be more predictive as it won't apply over-fitting
+on other samples due to not applying greedy strategy like right hand model.                                               
+
+**Part (c)** How would increasing interaction depth affect the slope of predictor
+    importance for either model in Fig. 8.24 ?                              
+
+*Answer* :- The greater the interaction depth, the lower the root mean square
+error and the steeper the slope of predictor importance i.e. as the tree depth 
+would increase we expect to see a more uniform spread of variable importance 
+across all variables.                  
+
+                              
 # KJ Question 8.7
+Refer to Exercises 6.3 and 7.5 which describe a chemical manufacturing
+process. Use the same data imputation, data splitting, and pre-processing
+steps as before and train several tree-based models:
+
+
+**(a)** Which tree-based regression model gives the optimal resampling and test
+    set performance?
+
+```{r KJ8.7a }
+library(VIM)
+
+data(ChemicalManufacturingProcess)
+cmpImp <- kNN(ChemicalManufacturingProcess, imp_var = FALSE) 
+cmp_non_pred <- nearZeroVar(cmpImp) # remove predictors
+cmp <- cmpImp[,-cmp_non_pred]
+set.seed(8)
+trainrows <- createDataPartition(cmp$Yield,p=0.7,
+                                 list=FALSE)
+cmp_train <- cmp[trainrows,]
+cmp_test <- cmp[-trainrows,]
+
+X_train <- cmp_train[,-1]
+Y_train <- cmp_train[,1]
+
+X_test <- cmp_test[,-1]
+Y_test <- cmp_test[,1]
+
+```
+
+```{r SingleTreeCART }
+# Single Tree (CART)
+set.seed(42)
+
+cmpCart_CP <- train(X_train, Y_train,
+                  method = "rpart",
+                  tuneLength = 10,
+                  trControl = trainControl(method="cv"))
+
+
+cmpCart_Dep <- train(X_train, Y_train,
+                  method = "rpart2",
+                  tuneLength = 10,
+                  trControl = trainControl(method="cv"))
+cmp_cartCP_pred <- predict(cmpCart_CP, newdata = X_test)
+cmp_cartDep_pred <- predict(cmpCart_Dep, newdata = X_test)
+
+```
+
+```{r  RandomForestModel}
+# RandomForest Model
+control <- trainControl(method="repeatedcv", number=10, repeats=3)
+set.seed(42)
+mtry <- sqrt(ncol(CMP))
+tunegrid <- expand.grid(.mtry=mtry)
+rfModel <- train(X_train, Y_train,method = "rf",tuneGrid = tunegrid,metric = "Rsquared",importance = TRUE, trControl = control)
+rfModel_pred <- predict(rfModel, newdata = X_test)
+```
+
+```{r GBM}
+#GradientBoostingModel 
+
+grid <- expand.grid(n.trees=seq(100, 400, by=50), interaction.depth=seq(1,8 , by=2),  shrinkage=c(0.01, 0.1), 
+                    n.minobsinnode=c(5, 10, 15))
+set.seed(42)
+gbmModel <- train(X_train, Y_train,method="gbm",tuneGrid = grid,verbose=FALSE)
+gmbModel_pred <- predict(gbmModel, newdata = X_test)
+
+```
+
+
+```{r Cubist}
+
+set.seed(42)
+cubeModel <- train(X_train, Y_train, committees = 100)
+cubeModel_pred <- predict(cubeModel, newdata = X_test)
+
+```
+
+```{r checkingBestModel}
+postResample(obs = Y_test, pred=cmp_cartCP_pred)
+postResample(obs = Y_test, pred=cmp_cartDep_pred)
+postResample(obs = Y_test, pred=rfModel_pred)
+postResample(obs = Y_test, pred=gmbModel_pred)
+postResample(obs = Y_test, pred=cubeModel_pred)
+```
+                     
+*Answer* :- The Gradient Boosting Model has the lowest root mean square error for the test
+set,thus exhibits best predictive performance against the chemical processing
+test data.                          
+
+**(b)** Which predictors are most important in the optimal tree-based regression
+    model? Do either the biological or process variables dominate the list?
+    How do the top 10 important predictors compare to the top 10 predictors
+    from the optimal linear and nonlinear models?                            
+
+```{r 8.7b}
+
+varImp(gbmModel)
+
+```
+                        
+*Answer* :-The top 20 best predictor list is shown above,according to 
+which the Manufacturing processes dominate the top 20 important predictors 
+with 11 count and Biological having 9 counts.                         
+
+In optimal linear model and non-linear models in the top ten predictors
+Manufacturing process is the primary with 9 out of ten predictors . Also
+the importance of the predictors doesn't drops that significantly in Tree based
+Model than in Linear & non-linear where the drop is significant.
+
+
+**(c)** Plot the optimal single tree with the distribution of yield in the terminal
+    nodes. Does this view of the data provide additional knowledge about the
+    biological or process predictors and their relationship with yield?
+
+```{r 8.7c , , fig.height=8L, fig.width=10L}
+library(party)
+library(ggparty)
+rpartTree2 <- as.party(cmpCart_Dep$finalModel)
+plot(rpartTree2)
+
+```
+
+*Answer* :- The visuals confirms variable dominance of manufacturing processes predictors,
+but biological processes although not as dominant as,manufacturing process but is
+important in higher split suggesting influence in arriving at the terminal nodes.
 
 # Market Basket Analysis
 
